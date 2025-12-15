@@ -8,7 +8,6 @@
     <meta name="apple-mobile-web-app-title" content="Moonlight Mosaic">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <!-- 添加一个图标占位符，有助于iOS识别PWA -->
     <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==">
     
     <title>Moonlight Mosaic - 我们的月光拼图</title>
@@ -32,6 +31,8 @@
             background-color: #0f172a; /* Slate 900 */
             color: #f8fafc;
             font-family: 'Times New Roman', serif;
+            /* 全面屏安全区适配 */
+            padding-top: env(safe-area-inset-top);
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
             padding-bottom: env(safe-area-inset-bottom);
@@ -85,6 +86,10 @@
             background-size: 40px 40px;
             background-position: center;
         }
+
+        /* 动画类 */
+        .scale-in { animation: scaleIn 0.3s ease-out forwards; }
+        @keyframes scaleIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -116,81 +121,49 @@
             { word: "GENUINE", def: "【形】真诚的", ex: "It was a movement of genuine affection." },
             { word: "DESTINY", def: "【名】命运", ex: "It was our destiny to meet." },
             { word: "AFFECTION", def: "【名】喜爱，钟爱", ex: "He showed deep affection for her." },
-            { word: "GRATITUDE", def: "【名】感激", ex: "I feel eternal gratitude for your love." }
+            { word: "GRATITUDE", def: "【名】感激", ex: "I feel eternal gratitude for your love." },
+            { word: "PASSION", def: "【名】激情", ex: "A shared passion for adventure." },
+            { word: "SINCERE", def: "【形】真挚的", ex: "My sincere apology for the delay." },
+            { word: "VIBRANT", def: "【形】充满活力的", ex: "A vibrant relationship." },
+            { word: "SPLENDID", def: "【形】辉煌的，极好的", ex: "We had a splendid time." },
+            { word: "PRECIOUS", def: "【形】珍贵的", ex: "Time is precious." }
         ];
 
-        // 国际象棋关卡库
+        // 国际象棋关卡库 (扩充)
         const CHESS_LEVELS = [
             { id: 1, size: 4, grid: [[1,0,2,0],[0,0,1,0],[0,2,0,0],[3,0,0,1]], par: 6 },
             { id: 2, size: 5, grid: [[1,0,2,0,1],[0,0,4,0,0],[2,0,3,0,2],[0,0,4,0,0],[1,0,2,0,1]], par: 8 },
-            { id: 3, size: 6, grid: [[0,1,0,0,1,0],[2,0,0,2,0,0],[0,0,4,4,0,0],[0,0,4,4,0,0],[0,2,0,0,2,0],[1,0,3,0,0,1]], par: 12 }
+            { id: 3, size: 6, grid: [[0,1,0,0,1,0],[2,0,0,2,0,0],[0,0,4,4,0,0],[0,0,4,4,0,0],[0,2,0,0,2,0],[1,0,3,0,0,1]], par: 12 },
+            { id: 4, size: 5, grid: [[3,0,0,0,1],[0,4,4,4,0],[0,4,1,4,0],[0,4,4,4,0],[1,0,0,0,0]], par: 10 }, // 迷宫型
+            { id: 5, size: 4, grid: [[1,2,1,2],[0,0,0,0],[0,4,4,0],[3,0,0,0]], par: 7 } // 密集陷阱
         ];
 
-        // 五子棋残局库 (黑子先行，Win in 1)
-        // 1=Black(User), 2=White(AI), 0=Empty, 3=Hint
+        // 五子棋残局库 (扩充)
         const GOMOKU_LEVELS = [
-            {
-                id: 1,
-                // 横向四连缺一
-                pieces: [{r:4,c:3,t:1},{r:4,c:4,t:1},{r:4,c:6,t:1},{r:4,c:7,t:1}, {r:5,c:5,t:2}, {r:3,c:5,t:2}],
-                winSpot: {r:4, c:5}
-            },
-            {
-                id: 2,
-                // 斜向杀棋
-                pieces: [{r:2,c:2,t:1},{r:3,c:3,t:1},{r:5,c:5,t:1}, {r:2,c:3,t:2},{r:3,c:2,t:2}],
-                winSpot: {r:4, c:4}
-            },
-            {
-                id: 3,
-                // 复杂一点的活三变活四
-                pieces: [{r:5,c:5,t:1},{r:5,c:6,t:1},{r:5,c:7,t:1}, {r:4,c:6,t:2},{r:6,c:6,t:2}],
-                winSpot: {r:5, c:4} // 或者 c:8
-            }
+            { id: 1, pieces: [{r:4,c:3,t:1},{r:4,c:4,t:1},{r:4,c:6,t:1},{r:4,c:7,t:1}, {r:5,c:5,t:2}, {r:3,c:5,t:2}], winSpot: {r:4, c:5} },
+            { id: 2, pieces: [{r:2,c:2,t:1},{r:3,c:3,t:1},{r:5,c:5,t:1}, {r:2,c:3,t:2},{r:3,c:2,t:2}], winSpot: {r:4, c:4} },
+            { id: 3, pieces: [{r:5,c:5,t:1},{r:5,c:6,t:1},{r:5,c:7,t:1}, {r:4,c:6,t:2},{r:6,c:6,t:2}], winSpot: {r:5, c:4} },
+            { id: 4, pieces: [{r:3,c:3,t:1},{r:3,c:4,t:1},{r:4,c:3,t:1}, {r:2,c:2,t:2},{r:5,c:5,t:2}], winSpot: {r:4, c:4} }, // 双三杀
+            { id: 5, pieces: [{r:4,c:4,t:2},{r:4,c:5,t:2},{r:4,c:6,t:2},{r:3,c:5,t:1},{r:5,c:5,t:1},{r:3,c:4,t:1},{r:3,c:6,t:1}], winSpot: {r:2, c:5} } // 防守反击
         ];
 
-        // 迷你数独 (4x4)
-        // 0 = empty
+        // 迷你数独 (扩充)
         const SUDOKU_LEVELS = [
-            {
-                id: 1,
-                initial: [
-                    [1,0,0,4],
-                    [0,0,0,0],
-                    [0,0,0,0],
-                    [2,0,0,3]
-                ],
-                solution: [
-                    [1,2,3,4],
-                    [3,4,1,2],
-                    [4,3,2,1],
-                    [2,1,4,3]
-                ]
-            },
-            {
-                id: 2,
-                initial: [
-                    [0,2,0,0],
-                    [3,0,0,2],
-                    [1,0,0,4],
-                    [0,0,2,0]
-                ],
-                solution: [
-                    [4,2,3,1],
-                    [3,1,4,2],
-                    [1,3,2,4],
-                    [2,4,1,3]
-                ]
-            }
+            { id: 1, initial: [[1,0,0,4],[0,0,0,0],[0,0,0,0],[2,0,0,3]], solution: [[1,2,3,4],[3,4,1,2],[4,3,2,1],[2,1,4,3]] },
+            { id: 2, initial: [[0,2,0,0],[3,0,0,2],[1,0,0,4],[0,0,2,0]], solution: [[4,2,3,1],[3,1,4,2],[1,3,2,4],[2,4,1,3]] },
+            { id: 3, initial: [[0,0,0,0],[0,1,2,0],[0,3,4,0],[0,0,0,0]], solution: [[1,2,3,4],[4,1,2,3],[2,3,4,1],[3,4,1,2]] }
         ];
 
-        // --- 游戏生成器 ---
+        // --- 游戏生成器 (完全随机化 + 丰富组合) ---
         const generateGameStructure = () => {
-            const words = [...WORD_LIBRARY].sort(() => 0.5 - Math.random());
+            // 复制一份单词库以供随机抽取
+            let wordPool = [...WORD_LIBRARY].sort(() => 0.5 - Math.random());
             
-            const getWords = (count) => {
-                const selected = words.splice(0, count);
-                return selected.map((item, idx) => ({
+            // 辅助：获取不重复的单词
+            const getUniqueWords = (count) => {
+                if (wordPool.length < count) wordPool = [...WORD_LIBRARY].sort(() => 0.5 - Math.random()); // 补充
+                const selected = wordPool.splice(0, count);
+                return selected.map((item) => ({
                     type: 'word',
                     data: {
                         ...item,
@@ -212,33 +185,41 @@
                 return opts.sort(() => 0.5 - Math.random());
             };
 
-            // 6 章节，每个章节 4-5 个游戏
-            return [
-                {
-                    title: "Chapter 1: 初识",
-                    games: [...getWords(2), { type: 'gomoku', data: GOMOKU_LEVELS[0] }, { type: 'word', data: getWords(1)[0].data }] 
-                },
-                {
-                    title: "Chapter 2: 探索",
-                    games: [...getWords(1), { type: 'knight', data: { id: 1 } }, { type: 'sudoku', data: SUDOKU_LEVELS[0] }, { type: 'sync', data: {} }]
-                },
-                {
-                    title: "Chapter 3: 磨合",
-                    games: [{ type: 'knight', data: { id: 2 } }, ...getWords(1), { type: 'gomoku', data: GOMOKU_LEVELS[1] }, { type: 'sudoku', data: SUDOKU_LEVELS[1] }]
-                },
-                {
-                    title: "Chapter 4: 默契",
-                    games: [...getWords(2), { type: 'knight', data: { id: 3 } }, { type: 'gomoku', data: GOMOKU_LEVELS[2] }]
-                },
-                {
-                    title: "Chapter 5: 心有灵犀",
-                    games: [{ type: 'sync', data: {} }, { type: 'sudoku', data: SUDOKU_LEVELS[0] }, { type: 'knight', data: { id: 2 } }, ...getWords(1)]
-                },
-                {
-                    title: "Chapter 6: 圆满",
-                    games: [...getWords(1), { type: 'gomoku', data: GOMOKU_LEVELS[1] }, { type: 'sync', data: {} }, { type: 'sync', data: {} }]
-                }
-            ];
+            // 辅助：获取随机的谜题 (Chess/Gomoku/Sudoku/Meteor)
+            const getRandomPuzzle = () => {
+                const types = ['knight', 'gomoku', 'sudoku', 'meteor'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                
+                let data = {};
+                if (type === 'knight') data = { id: CHESS_LEVELS[Math.floor(Math.random() * CHESS_LEVELS.length)].id };
+                if (type === 'gomoku') data = GOMOKU_LEVELS[Math.floor(Math.random() * GOMOKU_LEVELS.length)];
+                if (type === 'sudoku') data = SUDOKU_LEVELS[Math.floor(Math.random() * SUDOKU_LEVELS.length)];
+                if (type === 'meteor') data = {}; // Meteor catch is dynamic, no preset data needed
+
+                return { type, data };
+            };
+
+            // 生成单个章节 (6个游戏: 3-4个单词 + 2-3个随机谜题)
+            const generateChapter = (index) => {
+                const wordCount = Math.floor(Math.random() * 2) + 3; // 3 or 4
+                const puzzleCount = 6 - wordCount;
+                
+                const words = getUniqueWords(wordCount);
+                const puzzles = Array(puzzleCount).fill(null).map(() => getRandomPuzzle());
+                
+                // 合并并打乱顺序
+                const games = [...words, ...puzzles].sort(() => 0.5 - Math.random());
+
+                const titles = ["初识", "探索", "磨合", "默契", "心有灵犀", "圆满"];
+
+                return {
+                    title: `Chapter ${index + 1}: ${titles[index] || "旅程"}`,
+                    games: games
+                };
+            };
+
+            // 生成 6 个章节
+            return Array(6).fill(null).map((_, i) => generateChapter(i));
         };
 
         // --- 通用组件 ---
@@ -301,13 +282,11 @@
             const [feedback, setFeedback] = useState(""); 
             const isP1Controlling = data.startPlayer === 1;
 
-            // Hint Logic: Fill next correct char
             useEffect(() => {
                 if(hintSignal > 0) {
                     const nextCharIndex = selectedChars.length;
                     if(nextCharIndex < data.word.length) {
-                        const correctChar = data.word[nextCharIndex];
-                        handleCharClick(correctChar);
+                        handleCharClick(data.word[nextCharIndex]);
                     }
                 }
             }, [hintSignal]);
@@ -403,7 +382,6 @@
                 setGameStatus("playing");
             }, [levelData]);
 
-            // Hint: Highlight valid moves briefly
             useEffect(() => {
                 if(hintSignal > 0) {
                     setHighlightMoves(true);
@@ -523,14 +501,13 @@
             );
         };
 
-        // 3. 协作五子棋 (新)
+        // 3. 协作五子棋
         const GameGomoku = ({ data, onComplete, hintSignal }) => {
             const [cursorR, setCursorR] = useState(4);
             const [cursorC, setCursorC] = useState(4);
             const [gameStatus, setGameStatus] = useState("playing");
             const [placed, setPlaced] = useState(false);
 
-            // Hint: Move cursor to winning spot
             useEffect(() => {
                 if(hintSignal > 0 && !placed) {
                     setCursorR(data.winSpot.r);
@@ -557,10 +534,8 @@
             return (
                 <div className="flex w-full h-full relative z-10">
                     <DebugButton onClick={() => onComplete()} />
-                    {/* 公共棋盘 - 居中显示 */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="w-[400px] h-[400px] bg-[#e2c792] shadow-2xl rounded-lg gomoku-grid relative border-2 border-[#8b5a2b]">
-                            {/* 棋子渲染 */}
                             {data.pieces.map((p, i) => (
                                 <div key={i} className="absolute w-8 h-8 rounded-full shadow-md transform -translate-x-1/2 -translate-y-1/2"
                                      style={{
@@ -571,13 +546,11 @@
                                      }}
                                 ></div>
                             ))}
-                            {/* 玩家光标 */}
                             <div className={`absolute w-10 h-10 border-4 transition-all duration-200 transform -translate-x-1/2 -translate-y-1/2
                                 ${gameStatus === 'won' ? 'border-green-500 scale-125' : (gameStatus === 'lost' ? 'border-red-500' : 'border-blue-500 animate-pulse')}
                             `}
                             style={{left: `${cursorC * 40 + 20}px`, top: `${cursorR * 40 + 20}px`}}
                             >
-                                {/* 虚拟落子 */}
                                 {placed && (
                                     <div className="w-full h-full rounded-full bg-black"></div>
                                 )}
@@ -585,7 +558,6 @@
                         </div>
                     </div>
 
-                    {/* 左侧：行控制 */}
                     <div className="w-1/2 border-r border-white/10 relative flex flex-col justify-center items-start pl-8">
                         <div className="text-blue-300 font-bold mb-4 font-sans-custom">P1: 调整 行 (Row)</div>
                         <div className="flex flex-col gap-4">
@@ -594,7 +566,6 @@
                         </div>
                     </div>
 
-                    {/* 右侧：列控制 */}
                     <div className="w-1/2 relative flex flex-col justify-center items-end pr-8">
                         <div className="text-blue-300 font-bold mb-4 font-sans-custom">P2: 调整 列 (Col)</div>
                         <div className="flex flex-col gap-4 items-end">
@@ -611,16 +582,15 @@
             );
         };
 
-        // 4. 协作数独 (新)
+        // 4. 协作数独
         const GameSudoku = ({ data, onComplete, hintSignal }) => {
             const [grid, setGrid] = useState([]);
-            const [selectedCell, setSelectedCell] = useState(null); // {r, c}
+            const [selectedCell, setSelectedCell] = useState(null); 
             
             useEffect(() => {
                 setGrid(JSON.parse(JSON.stringify(data.initial)));
             }, [data]);
 
-            // Hint logic: Fill one empty correct cell
             useEffect(() => {
                 if(hintSignal > 0) {
                     for(let r=0; r<4; r++) {
@@ -636,7 +606,6 @@
                 }
             }, [hintSignal]);
 
-            // Check win
             useEffect(() => {
                 if(grid.length > 0) {
                     let full = true;
@@ -656,7 +625,7 @@
             const handleNumberInput = (num) => {
                 if(!selectedCell) return;
                 const {r, c} = selectedCell;
-                if(data.initial[r][c] !== 0) return; // locked
+                if(data.initial[r][c] !== 0) return;
 
                 const newGrid = [...grid];
                 newGrid[r][c] = num;
@@ -666,7 +635,6 @@
             return (
                 <div className="flex w-full h-full relative z-10">
                     <DebugButton onClick={() => onComplete()} />
-                    {/* Left: Board Selector */}
                     <div className="w-1/2 border-r border-white/10 flex flex-col items-center justify-center relative">
                         <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 font-sans-custom">P1: 选择格子</div>
                         <div className="grid grid-cols-4 gap-2 bg-slate-800 p-4 rounded-xl shadow-xl">
@@ -690,7 +658,6 @@
                         </div>
                     </div>
 
-                    {/* Right: Number Pad */}
                     <div className="w-1/2 flex flex-col items-center justify-center relative">
                         <div className="absolute top-4 right-4 text-xs font-bold text-slate-500 font-sans-custom">P2: 填入数字</div>
                         <div className="grid grid-cols-2 gap-4">
@@ -709,58 +676,124 @@
             );
         };
 
-        const GameSyncReaction = ({ onComplete }) => {
-            const [gameState, setGameState] = useState("waiting");
-            const [count, setCount] = useState(3);
-            const [p1Ready, setP1Ready] = useState(false);
-            const [p2Ready, setP2Ready] = useState(false);
+        // 5. 新增：流星捕手 (Meteor Catch - 反应速度游戏)
+        const GameMeteorCatch = ({ onComplete }) => {
+            const [targets, setTargets] = useState([]); // Array of {id, x, y, active}
+            const [score, setScore] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(20);
+            const [gameActive, setGameActive] = useState(false);
+            const targetIdCounter = useRef(0);
 
+            // Start Game
             useEffect(() => {
-                if (p1Ready && p2Ready && gameState === "waiting") {
-                    setGameState("counting");
-                    let c = 3;
-                    setCount(c);
-                    const timer = setInterval(() => {
-                        c--;
-                        setCount(c);
-                        if (c <= 0) {
+                setGameActive(true);
+                const timer = setInterval(() => {
+                    setTimeLeft(t => {
+                        if (t <= 1) {
                             clearInterval(timer);
-                            setGameState("active");
+                            setGameActive(false);
+                            return 0;
                         }
-                    }, 1000);
-                }
-            }, [p1Ready, p2Ready, gameState]);
+                        return t - 1;
+                    });
+                }, 1000);
+                return () => clearInterval(timer);
+            }, []);
 
-            const handleTouch = (player) => {
-                if (gameState !== "active") return;
-                setGameState("success");
-                setTimeout(onComplete, 1500);
+            // Generate Targets Loop
+            useEffect(() => {
+                if (!gameActive) return;
+                
+                const spawnInterval = setInterval(() => {
+                    if (targets.length < 6) {
+                        const id = targetIdCounter.current++;
+                        const isP1 = Math.random() > 0.5;
+                        const x = Math.random() * 80 + 10; // 10% to 90%
+                        const y = Math.random() * 80 + 10;
+                        
+                        setTargets(prev => [...prev, { id, isP1, x, y, active: true }]);
+                        
+                        // Auto remove after 2s
+                        setTimeout(() => {
+                            setTargets(prev => prev.filter(t => t.id !== id));
+                        }, 2000);
+                    }
+                }, 800);
+
+                return () => clearInterval(spawnInterval);
+            }, [gameActive, targets.length]);
+
+            // Check Win
+            useEffect(() => {
+                if (score >= 15) { // Win condition: 15 hits
+                    setGameActive(false);
+                    setTimeout(onComplete, 1000);
+                } else if (timeLeft === 0 && score < 15) {
+                    // Reset if failed
+                    setTimeout(() => {
+                        setScore(0);
+                        setTimeLeft(20);
+                        setTargets([]);
+                        setGameActive(true);
+                    }, 1500);
+                }
+            }, [score, timeLeft]);
+
+            const handleTap = (id) => {
+                if (!gameActive) return;
+                setTargets(prev => prev.filter(t => t.id !== id));
+                setScore(s => s + 1);
             };
 
             return (
-                <div className="flex w-full h-full relative z-10">
-                     <DebugButton onClick={onComplete} />
-                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none text-center w-full">
-                        {gameState === "waiting" && <div className="text-2xl font-sans-custom text-white tracking-widest animate-pulse bg-slate-900/80 px-8 py-4 rounded-full border border-white/10">两人同时按住指纹</div>}
-                        {gameState === "counting" && <div className="text-[10rem] font-bold text-yellow-400 font-sans-custom">{count}</div>}
-                        {gameState === "active" && <div className="text-8xl font-black text-green-400 tracking-tighter animate-pulse font-sans-custom">TAP!</div>}
-                        {gameState === "success" && <div className="text-4xl font-bold text-yellow-400 font-proposal-en">Perfect Harmony</div>}
+                <div className="flex w-full h-full relative z-10 overflow-hidden">
+                    <DebugButton onClick={onComplete} />
+                    
+                    {/* Central Score */}
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none text-center">
+                        {gameActive ? (
+                            <>
+                                <div className="text-6xl font-bold text-yellow-400 font-sans-custom mb-2">{score}/15</div>
+                                <div className="text-xl text-slate-400">时间: {timeLeft}s</div>
+                            </>
+                        ) : (
+                            score >= 15 ? 
+                            <div className="text-5xl font-bold text-green-400 font-proposal-en animate-bounce">Perfect!</div> :
+                            <div className="text-4xl text-red-400 font-sans-custom">Try Again!</div>
+                        )}
                     </div>
 
-                    {[1, 2].map(player => (
-                        <div key={player}
-                            className={`w-1/2 flex items-center justify-center transition-all duration-500 ${player===1?'border-r border-white/10':''} ${gameState === 'success' ? 'bg-green-500/20' : ''}`}
-                            onTouchStart={() => gameState === 'active' ? handleTouch(player) : (player===1?setP1Ready(true):setP2Ready(true))}
-                            onMouseDown={() => gameState === 'active' ? handleTouch(player) : (player===1?setP1Ready(true):setP2Ready(true))}
-                            onMouseUp={() => gameState === 'waiting' && (player===1?setP1Ready(false):setP2Ready(false))}
-                            onTouchEnd={() => gameState === 'waiting' && (player===1?setP1Ready(false):setP2Ready(false))}
-                        >
-                            <div className={`w-48 h-48 rounded-full border-2 flex items-center justify-center transition-all duration-300 
-                                ${(player===1?p1Ready:p2Ready) ? 'border-yellow-400 bg-yellow-400/20 scale-110 shadow-[0_0_50px_rgba(250,204,21,0.5)]' : 'border-white/20 bg-white/5 hover:bg-white/10'}`}>
-                                <i className={`ph-fill ph-fingerprint text-6xl ${(player===1?p1Ready:p2Ready) ? 'text-yellow-400' : 'text-white/30'}`}></i>
-                            </div>
-                        </div>
-                    ))}
+                    {/* P1 Zone */}
+                    <div className="w-1/2 border-r border-white/10 relative">
+                        <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 font-sans-custom">P1: 抓住流星!</div>
+                        {targets.filter(t => t.isP1).map(t => (
+                            <button
+                                key={t.id}
+                                className="absolute w-16 h-16 rounded-full bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.8)] scale-in active:scale-90 transition-transform flex items-center justify-center"
+                                style={{ left: `${t.x}%`, top: `${t.y}%` }}
+                                onTouchStart={() => handleTap(t.id)}
+                                onMouseDown={() => handleTap(t.id)}
+                            >
+                                <i className="ph-fill ph-star text-white text-2xl"></i>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* P2 Zone */}
+                    <div className="w-1/2 relative">
+                        <div className="absolute top-4 right-4 text-xs font-bold text-slate-500 font-sans-custom">P2: 抓住流星!</div>
+                        {targets.filter(t => !t.isP1).map(t => (
+                            <button
+                                key={t.id}
+                                className="absolute w-16 h-16 rounded-full bg-pink-500 shadow-[0_0_20px_rgba(236,72,153,0.8)] scale-in active:scale-90 transition-transform flex items-center justify-center"
+                                style={{ left: `${t.x}%`, top: `${t.y}%` }}
+                                onTouchStart={() => handleTap(t.id)}
+                                onMouseDown={() => handleTap(t.id)}
+                            >
+                                <i className="ph-fill ph-star text-white text-2xl"></i>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             );
         };
@@ -829,7 +862,7 @@
                 setChapterIndex(0);
                 setGameIndexInChapter(0);
                 setMoonProgress(0);
-                setHintsRemaining(3); // Reset hints per game or per chapter? Let's do per game session for challenge
+                setHintsRemaining(3); 
                 setGameStage("playing");
             };
 
@@ -842,7 +875,6 @@
 
             const handleGameComplete = () => {
                 const currentChapter = activeChapters[chapterIndex];
-                // Reset hints slightly per level? Or give +1 hint per level clear
                 setHintsRemaining(h => Math.min(5, h + 1));
 
                 if (gameIndexInChapter + 1 < currentChapter.games.length) {
@@ -889,11 +921,11 @@
                 <div className="w-screen h-screen flex flex-col overflow-hidden relative">
                     <StarBackground />
 
-                    {/* 顶部状态栏 */}
-                    <div className="h-14 border-b border-white/5 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur z-20 shrink-0">
+                    {/* 顶部状态栏 - 增加高度以适应安全区 */}
+                    <div className="border-b border-white/5 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur z-20 shrink-0" style={{height: 'calc(3.5rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)'}}>
                         <div className="text-slate-400 text-sm font-bold tracking-widest font-sans-custom">MOONLIGHT MOSAIC</div>
                         
-                        <div className="absolute left-1/2 transform -translate-x-1/2">
+                        <div className="absolute left-1/2 transform -translate-x-1/2 pt-[env(safe-area-inset-top)]">
                             {gameStage === 'playing' && (
                                 <HintButton onHint={triggerHint} disabled={hintsRemaining <= 0} />
                             )}
@@ -945,7 +977,7 @@
                             <div className="w-full h-full">
                                 {currentGame.type === 'word' && <GameWordPuzzle key={`w-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
                                 {currentGame.type === 'knight' && <GameStarKnight key={`k-${chapterIndex}-${gameIndexInChapter}`} levelId={currentGame.data.id} onComplete={handleGameComplete} hintSignal={hintSignal} />}
-                                {currentGame.type === 'sync' && <GameSyncReaction key={`s-${chapterIndex}-${gameIndexInChapter}`} onComplete={handleGameComplete} />}
+                                {currentGame.type === 'meteor' && <GameMeteorCatch key={`m-${chapterIndex}-${gameIndexInChapter}`} onComplete={handleGameComplete} />}
                                 {currentGame.type === 'gomoku' && <GameGomoku key={`g-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
                                 {currentGame.type === 'sudoku' && <GameSudoku key={`sd-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
                             </div>
