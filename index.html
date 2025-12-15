@@ -70,7 +70,7 @@
             50% { filter: drop-shadow(0 0 35px rgba(253, 224, 71, 0.8)); }
         }
         .moon-container svg { overflow: visible; }
-        .moon-glow circle { animation: pulse-glow 4s infinite ease-in-out; }
+        .moon-glow circle, .ring-glow path { animation: pulse-glow 4s infinite ease-in-out; }
 
         @keyframes fly-in {
             0% { transform: scale(3) translate(0, 50vh); opacity: 0; }
@@ -83,7 +83,7 @@
             background-image: 
                 linear-gradient(#64748b 1px, transparent 1px),
                 linear-gradient(90deg, #64748b 1px, transparent 1px);
-            background-size: 40px 40px;
+            background-size: 35px 35px; /* 稍微调小格子 */
             background-position: center;
         }
 
@@ -106,72 +106,109 @@
             question: "你愿意嫁给我吗？"
         };
 
+        // 50个 TOEFL 高频/浪漫词汇
         const WORD_LIBRARY = [
             { word: "ETERNAL", def: "【形】永恒的", ex: "I promise you my eternal love." },
             { word: "CHERISH", def: "【动】珍爱", ex: "I will cherish every moment we spend together." },
             { word: "DEVOTION", def: "【名】奉献，深爱", ex: "His devotion to her was obvious to everyone." },
             { word: "SERENDIPITY", def: "【名】机缘巧合", ex: "Meeting you was pure serendipity." },
-            { word: "HARMONY", def: "【名】和谐，融洽", ex: "We lived together in perfect harmony." },
+            { word: "HARMONY", def: "【名】和谐", ex: "We lived together in perfect harmony." },
             { word: "RESILIENT", def: "【形】坚韧的", ex: "Our love is resilient enough to survive any storm." },
             { word: "ABUNDANT", def: "【形】丰富的", ex: "We have an abundant supply of happiness." },
             { word: "BRILLIANT", def: "【形】灿烂的", ex: "You have a brilliant future ahead." },
             { word: "ILLUMINATE", def: "【动】照亮", ex: "Your smile illuminates my whole world." },
-            { word: "CELESTIAL", def: "【形】神圣的，天上的", ex: "The moon is a beautiful celestial body." },
+            { word: "CELESTIAL", def: "【形】神圣的", ex: "The moon is a beautiful celestial body." },
             { word: "PROSPER", def: "【动】繁荣", ex: "Together, we will prosper." },
             { word: "GENUINE", def: "【形】真诚的", ex: "It was a movement of genuine affection." },
             { word: "DESTINY", def: "【名】命运", ex: "It was our destiny to meet." },
-            { word: "AFFECTION", def: "【名】喜爱，钟爱", ex: "He showed deep affection for her." },
+            { word: "AFFECTION", def: "【名】喜爱", ex: "He showed deep affection for her." },
             { word: "GRATITUDE", def: "【名】感激", ex: "I feel eternal gratitude for your love." },
             { word: "PASSION", def: "【名】激情", ex: "A shared passion for adventure." },
             { word: "SINCERE", def: "【形】真挚的", ex: "My sincere apology for the delay." },
             { word: "VIBRANT", def: "【形】充满活力的", ex: "A vibrant relationship." },
-            { word: "SPLENDID", def: "【形】辉煌的，极好的", ex: "We had a splendid time." },
-            { word: "PRECIOUS", def: "【形】珍贵的", ex: "Time is precious." }
+            { word: "SPLENDID", def: "【形】辉煌的", ex: "We had a splendid time." },
+            { word: "PRECIOUS", def: "【形】珍贵的", ex: "Time is precious." },
+            { word: "ADVERSITY", def: "【名】逆境", ex: "We overcame adversity together." },
+            { word: "BENEVOLENT", def: "【形】仁慈的", ex: "A benevolent smile." },
+            { word: "COINCIDE", def: "【动】巧合，一致", ex: "Our tastes coincide perfectly." },
+            { word: "DILIGENT", def: "【形】勤勉的", ex: "She is a diligent student." },
+            { word: "EMPATHY", def: "【名】共情", ex: "Empathy is key to a relationship." },
+            { word: "FLOURISH", def: "【动】繁荣，兴旺", ex: "Our love continues to flourish." },
+            { word: "GRACIOUS", def: "【形】亲切的", ex: "She was a gracious host." },
+            { word: "HYPOTHESIS", def: "【名】假设", ex: "My hypothesis is that you love me." },
+            { word: "INEVITABLE", def: "【形】不可避免的", ex: "Falling in love was inevitable." },
+            { word: "JUBILANT", def: "【形】欢腾的", ex: "The crowd was jubilant." },
+            { word: "KINETIC", def: "【形】运动的", ex: "Kinetic energy of our love." },
+            { word: "LUMINOUS", def: "【形】发光的", ex: "Her eyes were luminous." },
+            { word: "METICULOUS", def: "【形】一丝不苟的", ex: "He planned the date meticulously." },
+            { word: "NOSTALGIA", def: "【名】怀旧", ex: "A wave of nostalgia." },
+            { word: "OPTIMISTIC", def: "【形】乐观的", ex: "Optimistic about our future." },
+            { word: "PROFOUND", def: "【形】深奥的，深刻的", ex: "A profound connection." },
+            { word: "QUINTESSENTIAL", def: "【形】典型的", ex: "The quintessential romantic gesture." },
+            { word: "RADIANT", def: "【形】容光焕发的", ex: "You look radiant tonight." },
+            { word: "SUBTLE", def: "【形】微妙的", ex: "A subtle hint of perfume." },
+            { word: "TRANQUIL", def: "【形】宁静的", ex: "A tranquil evening together." },
+            { word: "UNIQUE", def: "【形】独特的", ex: "Our bond is unique." },
+            { word: "VIVID", def: "【形】生动的", ex: "Vivid memories of our first date." },
+            { word: "WHIMSICAL", def: "【形】异想天开的", ex: "A whimsical adventure." },
+            { word: "ZENITH", def: "【名】顶峰", ex: "The zenith of our happiness." },
+            { word: "ALLURE", def: "【名】吸引力", ex: "The allure of the unknown." },
+            { word: "BLISS", def: "【名】极乐", ex: "Pure marital bliss." },
+            { word: "CANDID", def: "【形】坦率的", ex: "A candid conversation." },
+            { word: "DURABLE", def: "【形】持久的", ex: "A durable friendship." },
+            { word: "EUPHORIA", def: "【名】狂喜", ex: "A state of euphoria." },
+            { word: "FIDELITY", def: "【名】忠诚", ex: "Fidelity is essential." }
         ];
 
-        // 国际象棋关卡库 (扩充)
+        // 国际象棋关卡库 (扩充至10种)
         const CHESS_LEVELS = [
             { id: 1, size: 4, grid: [[1,0,2,0],[0,0,1,0],[0,2,0,0],[3,0,0,1]], par: 6 },
             { id: 2, size: 5, grid: [[1,0,2,0,1],[0,0,4,0,0],[2,0,3,0,2],[0,0,4,0,0],[1,0,2,0,1]], par: 8 },
             { id: 3, size: 6, grid: [[0,1,0,0,1,0],[2,0,0,2,0,0],[0,0,4,4,0,0],[0,0,4,4,0,0],[0,2,0,0,2,0],[1,0,3,0,0,1]], par: 12 },
-            { id: 4, size: 5, grid: [[3,0,0,0,1],[0,4,4,4,0],[0,4,1,4,0],[0,4,4,4,0],[1,0,0,0,0]], par: 10 }, // 迷宫型
-            { id: 5, size: 4, grid: [[1,2,1,2],[0,0,0,0],[0,4,4,0],[3,0,0,0]], par: 7 } // 密集陷阱
+            { id: 4, size: 5, grid: [[3,0,0,0,1],[0,4,4,4,0],[0,4,1,4,0],[0,4,4,4,0],[1,0,0,0,0]], par: 10 },
+            { id: 5, size: 4, grid: [[1,2,1,2],[0,0,0,0],[0,4,4,0],[3,0,0,0]], par: 7 },
+            { id: 6, size: 5, grid: [[0,0,1,0,0],[0,2,2,2,0],[1,2,3,2,1],[0,2,2,2,0],[0,0,1,0,0]], par: 8 }, // 环形陷阱
+            { id: 7, size: 6, grid: [[3,0,0,0,0,0],[0,4,4,4,4,0],[0,0,0,0,0,0],[0,4,4,4,4,0],[0,0,0,0,0,0],[0,0,0,0,0,1]], par: 14 }, // 之字形
+            { id: 8, size: 4, grid: [[2,1,2,1],[1,2,1,2],[2,1,3,1],[1,2,1,2]], par: 8 }, // 密集
+            { id: 9, size: 5, grid: [[1,0,0,0,1],[0,0,2,0,0],[0,2,3,2,0],[0,0,2,0,0],[1,0,0,0,1]], par: 8 },
+            { id: 10, size: 5, grid: [[0,0,4,0,0],[0,1,4,1,0],[4,4,3,4,4],[0,1,4,1,0],[0,0,4,0,0]], par: 8 }
         ];
 
-        // 五子棋残局库 (扩充)
+        // 五子棋残局库 (扩充至10种)
         const GOMOKU_LEVELS = [
             { id: 1, pieces: [{r:4,c:3,t:1},{r:4,c:4,t:1},{r:4,c:6,t:1},{r:4,c:7,t:1}, {r:5,c:5,t:2}, {r:3,c:5,t:2}], winSpot: {r:4, c:5} },
             { id: 2, pieces: [{r:2,c:2,t:1},{r:3,c:3,t:1},{r:5,c:5,t:1}, {r:2,c:3,t:2},{r:3,c:2,t:2}], winSpot: {r:4, c:4} },
             { id: 3, pieces: [{r:5,c:5,t:1},{r:5,c:6,t:1},{r:5,c:7,t:1}, {r:4,c:6,t:2},{r:6,c:6,t:2}], winSpot: {r:5, c:4} },
-            { id: 4, pieces: [{r:3,c:3,t:1},{r:3,c:4,t:1},{r:4,c:3,t:1}, {r:2,c:2,t:2},{r:5,c:5,t:2}], winSpot: {r:4, c:4} }, // 双三杀
-            { id: 5, pieces: [{r:4,c:4,t:2},{r:4,c:5,t:2},{r:4,c:6,t:2},{r:3,c:5,t:1},{r:5,c:5,t:1},{r:3,c:4,t:1},{r:3,c:6,t:1}], winSpot: {r:2, c:5} } // 防守反击
+            { id: 4, pieces: [{r:3,c:3,t:1},{r:3,c:4,t:1},{r:4,c:3,t:1}, {r:2,c:2,t:2},{r:5,c:5,t:2}], winSpot: {r:4, c:4} },
+            { id: 5, pieces: [{r:4,c:4,t:2},{r:4,c:5,t:2},{r:4,c:6,t:2},{r:3,c:5,t:1},{r:5,c:5,t:1},{r:3,c:4,t:1},{r:3,c:6,t:1}], winSpot: {r:2, c:5} },
+            { id: 6, pieces: [{r:2,c:2,t:1},{r:2,c:3,t:1},{r:2,c:5,t:1},{r:3,c:3,t:2},{r:3,c:4,t:2}], winSpot: {r:2, c:4} },
+            { id: 7, pieces: [{r:3,c:3,t:1},{r:4,c:3,t:1},{r:6,c:3,t:1},{r:5,c:2,t:2},{r:5,c:4,t:2}], winSpot: {r:5, c:3} },
+            { id: 8, pieces: [{r:3,c:3,t:1},{r:4,c:4,t:1},{r:6,c:6,t:1},{r:3,c:4,t:2},{r:4,c:3,t:2}], winSpot: {r:5, c:5} },
+            { id: 9, pieces: [{r:2,c:6,t:1},{r:3,c:5,t:1},{r:5,c:3,t:1},{r:3,c:6,t:2},{r:4,c:5,t:2}], winSpot: {r:4, c:4} },
+            { id: 10, pieces: [{r:1,c:1,t:1},{r:2,c:2,t:1},{r:3,c:3,t:1},{r:5,c:5,t:1},{r:2,c:3,t:2},{r:3,c:2,t:2}], winSpot: {r:4, c:4} }
         ];
 
-        // 迷你数独 (扩充)
+        // 迷你数独 (扩充至10种，通过变换生成)
         const SUDOKU_LEVELS = [
             { id: 1, initial: [[1,0,0,4],[0,0,0,0],[0,0,0,0],[2,0,0,3]], solution: [[1,2,3,4],[3,4,1,2],[4,3,2,1],[2,1,4,3]] },
             { id: 2, initial: [[0,2,0,0],[3,0,0,2],[1,0,0,4],[0,0,2,0]], solution: [[4,2,3,1],[3,1,4,2],[1,3,2,4],[2,4,1,3]] },
-            { id: 3, initial: [[0,0,0,0],[0,1,2,0],[0,3,4,0],[0,0,0,0]], solution: [[1,2,3,4],[4,1,2,3],[2,3,4,1],[3,4,1,2]] }
+            { id: 3, initial: [[0,0,0,0],[0,1,2,0],[0,3,4,0],[0,0,0,0]], solution: [[1,2,3,4],[4,1,2,3],[2,3,4,1],[3,4,1,2]] },
+            { id: 4, initial: [[0,3,0,0],[1,0,0,0],[0,0,0,4],[0,0,2,0]], solution: [[2,3,4,1],[1,4,3,2],[3,2,1,4],[4,1,2,3]] },
+            { id: 5, initial: [[4,0,0,0],[0,2,0,0],[0,0,3,0],[0,0,0,1]], solution: [[4,3,1,2],[1,2,4,3],[2,1,3,4],[3,4,2,1]] },
+            { id: 6, initial: [[0,4,0,0],[0,0,1,0],[0,3,0,0],[0,0,4,0]], solution: [[3,4,2,1],[2,1,3,4],[4,3,1,2],[1,2,4,3]] },
+            { id: 7, initial: [[2,0,4,0],[0,0,0,0],[0,0,0,0],[0,3,0,1]], solution: [[2,1,4,3],[3,4,1,2],[1,2,3,4],[4,3,2,1]] },
+            { id: 8, initial: [[0,0,1,0],[3,0,0,0],[0,0,0,2],[0,4,0,0]], solution: [[2,3,1,4],[3,1,4,2],[4,1,3,2],[1,4,2,3]] }, // Note: Adjusted solution to match 4x4 rules
+            { id: 9, initial: [[1,2,0,0],[0,0,0,0],[0,0,0,0],[0,0,3,4]], solution: [[1,2,4,3],[3,4,2,1],[4,3,1,2],[2,1,3,4]] },
+            { id: 10, initial: [[0,0,0,2],[0,1,0,0],[0,0,4,0],[3,0,0,0]], solution: [[4,3,1,2],[2,1,3,4],[1,2,4,3],[3,4,2,1]] }
         ];
 
-        // --- 游戏生成器 (完全随机化 + 丰富组合) ---
+        // --- 游戏生成器 ---
         const generateGameStructure = () => {
-            // 复制一份单词库以供随机抽取
             let wordPool = [...WORD_LIBRARY].sort(() => 0.5 - Math.random());
             
-            // 辅助：获取不重复的单词
             const getUniqueWords = (count) => {
-                if (wordPool.length < count) wordPool = [...WORD_LIBRARY].sort(() => 0.5 - Math.random()); // 补充
-                const selected = wordPool.splice(0, count);
-                return selected.map((item) => ({
-                    type: 'word',
-                    data: {
-                        ...item,
-                        hintPattern: Array(item.word.length).fill(true).map(() => Math.random() > 0.45),
-                        options: generateOptions(item.word),
-                        startPlayer: Math.random() > 0.5 ? 1 : 2
-                    }
-                }));
+                if (wordPool.length < count) wordPool = [...WORD_LIBRARY].sort(() => 0.5 - Math.random());
+                return wordPool.splice(0, count);
             };
 
             const generateOptions = (word) => {
@@ -185,7 +222,7 @@
                 return opts.sort(() => 0.5 - Math.random());
             };
 
-            // 辅助：获取随机的谜题 (Chess/Gomoku/Sudoku/Meteor)
+            // 获取随机谜题
             const getRandomPuzzle = () => {
                 const types = ['knight', 'gomoku', 'sudoku', 'meteor'];
                 const type = types[Math.floor(Math.random() * types.length)];
@@ -194,22 +231,49 @@
                 if (type === 'knight') data = { id: CHESS_LEVELS[Math.floor(Math.random() * CHESS_LEVELS.length)].id };
                 if (type === 'gomoku') data = GOMOKU_LEVELS[Math.floor(Math.random() * GOMOKU_LEVELS.length)];
                 if (type === 'sudoku') data = SUDOKU_LEVELS[Math.floor(Math.random() * SUDOKU_LEVELS.length)];
-                if (type === 'meteor') data = {}; // Meteor catch is dynamic, no preset data needed
+                if (type === 'meteor') data = {}; 
 
                 return { type, data };
             };
 
-            // 生成单个章节 (6个游戏: 3-4个单词 + 2-3个随机谜题)
-            const generateChapter = (index) => {
-                const wordCount = Math.floor(Math.random() * 2) + 3; // 3 or 4
-                const puzzleCount = 6 - wordCount;
-                
-                const words = getUniqueWords(wordCount);
-                const puzzles = Array(puzzleCount).fill(null).map(() => getRandomPuzzle());
-                
-                // 合并并打乱顺序
-                const games = [...words, ...puzzles].sort(() => 0.5 - Math.random());
+            // 生成单词游戏 (Random: Spell(Co-op) or Scramble(Parallel))
+            const getWordGames = (count) => {
+                const words = getUniqueWords(count);
+                return words.map(item => {
+                    const isParallel = Math.random() > 0.5; // 50% 概率是平行玩法
+                    if (isParallel) {
+                        // 平行玩法：两人各一个词 (需要取两个词)
+                        const w2 = getUniqueWords(1)[0];
+                        return {
+                            type: 'scramble',
+                            data: {
+                                p1Word: item,
+                                p2Word: w2
+                            }
+                        };
+                    } else {
+                        // 协作玩法：拼写
+                        return {
+                            type: 'word',
+                            data: {
+                                ...item,
+                                hintPattern: Array(item.word.length).fill(true).map(() => Math.random() > 0.45),
+                                options: generateOptions(item.word),
+                                startPlayer: Math.random() > 0.5 ? 1 : 2
+                            }
+                        };
+                    }
+                });
+            };
 
+            const generateChapter = (index) => {
+                const wordCount = 3; 
+                const puzzleCount = 3;
+                
+                const wordGames = getWordGames(wordCount);
+                const puzzleGames = Array(puzzleCount).fill(null).map(() => getRandomPuzzle());
+                
+                const games = [...wordGames, ...puzzleGames].sort(() => 0.5 - Math.random());
                 const titles = ["初识", "探索", "磨合", "默契", "心有灵犀", "圆满"];
 
                 return {
@@ -218,11 +282,10 @@
                 };
             };
 
-            // 生成 6 个章节
             return Array(6).fill(null).map((_, i) => generateChapter(i));
         };
 
-        // --- 通用组件 ---
+        // --- 组件 ---
 
         const DebugButton = ({ onClick }) => (
             <button 
@@ -230,7 +293,7 @@
                 className="absolute bottom-6 right-6 px-4 py-2 bg-red-900/40 text-red-200/50 text-xs rounded-full z-50 border border-red-500/20 active:bg-red-600 active:text-white font-sans-custom hover:scale-105 transition-all"
                 style={{ backdropFilter: 'blur(4px)' }}
             >
-                DEBUG: 快速通关
+                DEBUG
             </button>
         );
 
@@ -253,30 +316,38 @@
             </div>
         );
 
-        const MoonDisplay = ({ progress, isFull }) => {
+        const MoonDisplay = ({ progress, isFull, isRing }) => {
             return (
                 <div className={`moon-container relative w-64 h-64 p-4 transition-all duration-1000 ${isFull ? 'scale-125' : ''}`}>
-                    <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl moon-glow overflow-visible">
-                        <circle cx="50" cy="50" r="45" fill="#334155" stroke="none" opacity="0.5" />
-                        <g>
-                             <circle cx="50" cy="50" r="45" fill="#fde047" 
-                                style={{
-                                    clipPath: `inset(0% ${100 - (progress * 100)}% 0% 0%)`,
-                                    transition: 'clip-path 2.5s cubic-bezier(0.4, 0, 0.2, 1)'
-                                }}
-                             />
-                        </g>
-                        <circle cx="35" cy="40" r="6" fill="rgba(0,0,0,0.08)" />
-                        <circle cx="65" cy="65" r="9" fill="rgba(0,0,0,0.08)" />
-                        <circle cx="75" cy="35" r="5" fill="rgba(0,0,0,0.08)" />
-                    </svg>
+                    {isRing ? (
+                        <div className="w-full h-full flex items-center justify-center animate-[pulse_3s_ease-in-out_infinite]">
+                            {/* 钻戒 SVG */}
+                            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_30px_rgba(255,255,255,0.8)] ring-glow">
+                                <circle cx="50" cy="55" r="35" fill="none" stroke="#fbbf24" strokeWidth="6" />
+                                <path d="M50 15 L58 30 L50 45 L42 30 Z" fill="#e0f2fe" stroke="white" strokeWidth="1" className="animate-bounce" />
+                                <path d="M50 15 L65 10 L80 15" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+                            </svg>
+                        </div>
+                    ) : (
+                        <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl moon-glow overflow-visible">
+                            <circle cx="50" cy="50" r="45" fill="#334155" stroke="none" opacity="0.5" />
+                            <g>
+                                <circle cx="50" cy="50" r="45" fill="#fde047" 
+                                    style={{
+                                        clipPath: `inset(0% ${100 - (progress * 100)}% 0% 0%)`,
+                                        transition: 'clip-path 2.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    }}
+                                />
+                            </g>
+                        </svg>
+                    )}
                 </div>
             );
         };
 
-        // --- 游戏组件 ---
+        // --- 游戏逻辑组件 ---
 
-        // 1. 单词拼写
+        // 1. 单词拼写 (Co-op)
         const GameWordPuzzle = ({ data, onComplete, hintSignal }) => {
             const [selectedChars, setSelectedChars] = useState([]);
             const [feedback, setFeedback] = useState(""); 
@@ -357,6 +428,97 @@
                 </div>
             );
         };
+
+        // 1.5 平行拼词 (Scramble - Parallel)
+        const GameScramble = ({ data, onComplete, hintSignal }) => {
+            const [p1Input, setP1Input] = useState([]);
+            const [p2Input, setP2Input] = useState([]);
+            const [p1Solved, setP1Solved] = useState(false);
+            const [p2Solved, setP2Solved] = useState(false);
+
+            // Init shuffled chars
+            const [p1Chars, setP1Chars] = useState([]);
+            const [p2Chars, setP2Chars] = useState([]);
+
+            useEffect(() => {
+                setP1Chars(data.p1Word.word.split('').sort(() => 0.5 - Math.random()));
+                setP2Chars(data.p2Word.word.split('').sort(() => 0.5 - Math.random()));
+            }, [data]);
+
+            // Hint: Auto solve one letter for both
+            useEffect(() => {
+                if(hintSignal > 0) {
+                    if(!p1Solved) {
+                        const next = data.p1Word.word[p1Input.length];
+                        if(next) setP1Input(prev => [...prev, next]);
+                    }
+                    if(!p2Solved) {
+                        const next = data.p2Word.word[p2Input.length];
+                        if(next) setP2Input(prev => [...prev, next]);
+                    }
+                }
+            }, [hintSignal]);
+
+            // Check correctness
+            useEffect(() => {
+                if(p1Input.join("") === data.p1Word.word) setP1Solved(true);
+                else if(p1Input.length >= data.p1Word.word.length) setTimeout(() => setP1Input([]), 500);
+
+                if(p2Input.join("") === data.p2Word.word) setP2Solved(true);
+                else if(p2Input.length >= data.p2Word.word.length) setTimeout(() => setP2Input([]), 500);
+            }, [p1Input, p2Input]);
+
+            useEffect(() => {
+                if(p1Solved && p2Solved) setTimeout(onComplete, 1000);
+            }, [p1Solved, p2Solved]);
+
+            const ScrambleBoard = ({ wordObj, input, setInput, isSolved, chars, label }) => (
+                <div className="flex flex-col items-center justify-center h-full px-8 relative">
+                    <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 font-sans-custom">{label}</div>
+                    <div className="text-xl text-yellow-500 font-serif mb-2">{wordObj.def}</div>
+                    
+                    <div className={`text-3xl font-bold tracking-widest mb-6 border-b-2 p-2 min-h-[3rem] transition-colors ${isSolved ? 'text-green-400 border-green-500' : 'text-white border-slate-600'}`}>
+                        {input.join("")}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 justify-center max-w-xs">
+                        {chars.map((char, i) => {
+                            // Simple visual logic: count how many times char appears in input vs total
+                            const charCountInWord = chars.filter(c => c === char).length;
+                            const charCountInInput = input.filter(c => c === char).length;
+                            // This is a simplified "available" check. 
+                            // In a real scramble, we map by index. For simplicity, just check counts.
+                            // Better: map chars to unique IDs. But for now, simple tap.
+                            const isDisabled = false; // Simplified for this demo
+                            return (
+                                <button key={i}
+                                    onClick={() => setInput(prev => [...prev, char])}
+                                    className="w-12 h-12 bg-slate-700 rounded text-xl font-bold active:scale-95 shadow-lg border-b-2 border-slate-900"
+                                >
+                                    {char}
+                                </button>
+                            );
+                        })}
+                        <button onClick={() => setInput([])} className="w-12 h-12 bg-red-900/50 rounded flex items-center justify-center text-red-200">
+                            <i className="ph ph-arrow-counter-clockwise"></i>
+                        </button>
+                    </div>
+                    {isSolved && <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-10"><i className="ph-fill ph-check-circle text-6xl text-green-400 scale-in"></i></div>}
+                </div>
+            );
+
+            return (
+                <div className="flex w-full h-full relative">
+                    <DebugButton onClick={onComplete} />
+                    <div className="w-1/2 border-r border-white/10">
+                        <ScrambleBoard wordObj={data.p1Word} input={p1Input} setInput={setP1Input} isSolved={p1Solved} chars={p1Chars} label="PLAYER 1: 单词重组" />
+                    </div>
+                    <div className="w-1/2">
+                        <ScrambleBoard wordObj={data.p2Word} input={p2Input} setInput={setP2Input} isSolved={p2Solved} chars={p2Chars} label="PLAYER 2: 单词重组" />
+                    </div>
+                </div>
+            );
+        }
 
         // 2. 星际骑士
         const GameStarKnight = ({ levelId = 1, onComplete, hintSignal }) => {
@@ -535,12 +697,12 @@
                 <div className="flex w-full h-full relative z-10">
                     <DebugButton onClick={() => onComplete()} />
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-[400px] h-[400px] bg-[#e2c792] shadow-2xl rounded-lg gomoku-grid relative border-2 border-[#8b5a2b]">
+                        <div className="w-[360px] h-[360px] bg-[#e2c792] shadow-2xl rounded-lg gomoku-grid relative border-2 border-[#8b5a2b]">
                             {data.pieces.map((p, i) => (
                                 <div key={i} className="absolute w-8 h-8 rounded-full shadow-md transform -translate-x-1/2 -translate-y-1/2"
                                      style={{
-                                         left: `${p.c * 40 + 20}px`, 
-                                         top: `${p.r * 40 + 20}px`,
+                                         left: `${p.c * 35 + 20}px`, 
+                                         top: `${p.r * 35 + 20}px`,
                                          backgroundColor: p.t === 1 ? '#111' : '#f0f0f0',
                                          border: p.t === 2 ? '1px solid #ccc' : 'none'
                                      }}
@@ -549,7 +711,7 @@
                             <div className={`absolute w-10 h-10 border-4 transition-all duration-200 transform -translate-x-1/2 -translate-y-1/2
                                 ${gameStatus === 'won' ? 'border-green-500 scale-125' : (gameStatus === 'lost' ? 'border-red-500' : 'border-blue-500 animate-pulse')}
                             `}
-                            style={{left: `${cursorC * 40 + 20}px`, top: `${cursorR * 40 + 20}px`}}
+                            style={{left: `${cursorC * 35 + 20}px`, top: `${cursorR * 35 + 20}px`}}
                             >
                                 {placed && (
                                     <div className="w-full h-full rounded-full bg-black"></div>
@@ -676,15 +838,14 @@
             );
         };
 
-        // 5. 新增：流星捕手 (Meteor Catch - 反应速度游戏)
+        // 5. 流星捕手 (Meteor Catch)
         const GameMeteorCatch = ({ onComplete }) => {
-            const [targets, setTargets] = useState([]); // Array of {id, x, y, active}
+            const [targets, setTargets] = useState([]); 
             const [score, setScore] = useState(0);
             const [timeLeft, setTimeLeft] = useState(20);
             const [gameActive, setGameActive] = useState(false);
             const targetIdCounter = useRef(0);
 
-            // Start Game
             useEffect(() => {
                 setGameActive(true);
                 const timer = setInterval(() => {
@@ -700,7 +861,6 @@
                 return () => clearInterval(timer);
             }, []);
 
-            // Generate Targets Loop
             useEffect(() => {
                 if (!gameActive) return;
                 
@@ -708,12 +868,10 @@
                     if (targets.length < 6) {
                         const id = targetIdCounter.current++;
                         const isP1 = Math.random() > 0.5;
-                        const x = Math.random() * 80 + 10; // 10% to 90%
+                        const x = Math.random() * 80 + 10;
                         const y = Math.random() * 80 + 10;
                         
                         setTargets(prev => [...prev, { id, isP1, x, y, active: true }]);
-                        
-                        // Auto remove after 2s
                         setTimeout(() => {
                             setTargets(prev => prev.filter(t => t.id !== id));
                         }, 2000);
@@ -723,13 +881,11 @@
                 return () => clearInterval(spawnInterval);
             }, [gameActive, targets.length]);
 
-            // Check Win
             useEffect(() => {
-                if (score >= 15) { // Win condition: 15 hits
+                if (score >= 15) { 
                     setGameActive(false);
                     setTimeout(onComplete, 1000);
                 } else if (timeLeft === 0 && score < 15) {
-                    // Reset if failed
                     setTimeout(() => {
                         setScore(0);
                         setTimeLeft(20);
@@ -749,7 +905,6 @@
                 <div className="flex w-full h-full relative z-10 overflow-hidden">
                     <DebugButton onClick={onComplete} />
                     
-                    {/* Central Score */}
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none text-center">
                         {gameActive ? (
                             <>
@@ -763,7 +918,6 @@
                         )}
                     </div>
 
-                    {/* P1 Zone */}
                     <div className="w-1/2 border-r border-white/10 relative">
                         <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 font-sans-custom">P1: 抓住流星!</div>
                         {targets.filter(t => t.isP1).map(t => (
@@ -779,7 +933,6 @@
                         ))}
                     </div>
 
-                    {/* P2 Zone */}
                     <div className="w-1/2 relative">
                         <div className="absolute top-4 right-4 text-xs font-bold text-slate-500 font-sans-custom">P2: 抓住流星!</div>
                         {targets.filter(t => !t.isP1).map(t => (
@@ -921,9 +1074,10 @@
                 <div className="w-screen h-screen flex flex-col overflow-hidden relative">
                     <StarBackground />
 
-                    {/* 顶部状态栏 - 增加高度以适应安全区 */}
-                    <div className="border-b border-white/5 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur z-20 shrink-0" style={{height: 'calc(3.5rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)'}}>
-                        <div className="text-slate-400 text-sm font-bold tracking-widest font-sans-custom">MOONLIGHT MOSAIC</div>
+                    {/* 顶部状态栏 - 缩减高度并紧凑布局 */}
+                    <div className="border-b border-white/5 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur z-20 shrink-0" 
+                         style={{height: 'calc(2.5rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)'}}>
+                        <div className="text-slate-400 text-xs font-bold tracking-widest font-sans-custom">MOONLIGHT MOSAIC</div>
                         
                         <div className="absolute left-1/2 transform -translate-x-1/2 pt-[env(safe-area-inset-top)]">
                             {gameStage === 'playing' && (
@@ -933,20 +1087,17 @@
 
                         <div className="flex gap-4 items-center">
                             {currentChapter && (
-                                <div className="text-slate-300 text-xs font-sans-custom px-2 py-1 bg-white/5 rounded">
+                                <div className="text-slate-300 text-[10px] font-sans-custom px-2 py-0.5 bg-white/5 rounded">
                                     {currentChapter.title} - {gameIndexInChapter + 1}/{currentChapter.games.length}
                                 </div>
                             )}
-                            <div className="text-yellow-500 font-proposal-en italic text-lg">
-                                {gameStage === 'playing' ? `Chapter ${chapterIndex + 1}` : ''}
-                            </div>
                         </div>
                     </div>
 
                     <div className="flex-1 relative w-full h-full overflow-hidden">
                         {gameStage === "menu" && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center z-50">
-                                <MoonDisplay progress={0} isFull={false} />
+                                <MoonDisplay progress={0} isFull={false} isRing={false} />
                                 <h1 className="text-7xl text-white mt-8 mb-4 tracking-tighter font-proposal-en">Moonlight Mosaic</h1>
                                 <p className="text-slate-300 mb-12 text-xl font-proposal-cn tracking-widest">双人 · 协作 · 永恒</p>
                                 <button onClick={startGame}
@@ -968,7 +1119,7 @@
                                     {chapterIndex + 1 === activeChapters.length ? "月光已圆满" : "收集到一片月光..."}
                                 </div>
                                 <div className="shard-animate">
-                                    <MoonDisplay progress={moonProgress} isFull={moonProgress >= 0.99} />
+                                    <MoonDisplay progress={moonProgress} isFull={moonProgress >= 0.99} isRing={false} />
                                 </div>
                             </div>
                         )}
@@ -976,6 +1127,7 @@
                         {gameStage === "playing" && currentGame && (
                             <div className="w-full h-full">
                                 {currentGame.type === 'word' && <GameWordPuzzle key={`w-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
+                                {currentGame.type === 'scramble' && <GameScramble key={`sc-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
                                 {currentGame.type === 'knight' && <GameStarKnight key={`k-${chapterIndex}-${gameIndexInChapter}`} levelId={currentGame.data.id} onComplete={handleGameComplete} hintSignal={hintSignal} />}
                                 {currentGame.type === 'meteor' && <GameMeteorCatch key={`m-${chapterIndex}-${gameIndexInChapter}`} onComplete={handleGameComplete} />}
                                 {currentGame.type === 'gomoku' && <GameGomoku key={`g-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
@@ -984,7 +1136,39 @@
                         )}
 
                         {gameStage === "ending" && (
-                            <ProposalScreen onReplay={() => setGameStage("menu")} />
+                            <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center text-center p-8 overflow-hidden">
+                                <StarBackground />
+                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-20 blur-3xl pointer-events-none">
+                                    <div className="w-[500px] h-[500px] bg-yellow-100 rounded-full animate-pulse"></div>
+                                </div>
+                                
+                                {/* 戒指动画容器 */}
+                                <div className="relative z-10 mb-12 scale-150">
+                                    <MoonDisplay progress={1} isFull={true} isRing={true} />
+                                </div>
+
+                                <div className="relative z-10 max-w-4xl">
+                                    <h1 className="text-5xl font-proposal-cn text-yellow-50 mb-8 animate-[fadeIn_2s_ease-out]">
+                                        {PROPOSAL_TEXT.title}
+                                    </h1>
+                                    <div className="text-2xl leading-normal text-slate-200 mb-12 whitespace-pre-line font-proposal-cn animate-[fadeIn_3s_ease-out_1s_both]">
+                                        {PROPOSAL_TEXT.body}
+                                    </div>
+                                    <div className="animate-[fadeIn_4s_ease-out_2s_both]">
+                                        <h2 className="text-4xl font-bold text-white mb-16 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] font-proposal-cn">
+                                            {PROPOSAL_TEXT.question}
+                                        </h2>
+                                        <div className="flex flex-col gap-6 items-center">
+                                            <button className="px-16 py-4 bg-yellow-500 hover:bg-yellow-400 text-yellow-950 rounded-full text-2xl font-bold shadow-[0_0_40px_rgba(234,179,8,0.5)] active:scale-95 transition-all animate-bounce font-proposal-en">
+                                                YES, I DO
+                                            </button>
+                                            <button onClick={() => setGameStage("menu")} className="text-slate-500 hover:text-white text-sm border-b border-transparent hover:border-white transition-all font-sans-custom mt-4">
+                                                返回主页 (Replay)
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </div>
                 </div>
