@@ -189,9 +189,11 @@
         const DebugButton = ({ onClick }) => (
             <button 
                 onClick={(e) => { e.stopPropagation(); onClick(); }}
-                className="absolute bottom-2 right-2 w-8 h-8 opacity-0 hover:opacity-50 bg-red-500/20 rounded-full z-50 cursor-default"
+                className="absolute bottom-4 right-4 px-4 py-2 bg-red-600 text-white text-xs rounded-full z-50 shadow-lg border border-red-400 opacity-80 hover:opacity-100 font-sans-custom hover:scale-105 transition-all"
                 title="Debug Pass"
-            />
+            >
+                跳過關卡 (DEBUG)
+            </button>
         );
 
         // 背景组件
