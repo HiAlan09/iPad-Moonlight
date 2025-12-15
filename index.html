@@ -11,95 +11,64 @@
     <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==">
     
     <title>Moonlight Mosaic - 我们的月光拼图</title>
-    <!-- 引入 React 和 ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- 引入 Babel 用于解析 JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
     <style>
-        /* --- 基础设置 --- */
         body {
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
             overflow: hidden;
-            background-color: #0f172a; /* Slate 900 */
+            background-color: #0f172a;
             color: #f8fafc;
             font-family: 'Times New Roman', serif;
-            /* 全面屏安全区适配 */
             padding-top: env(safe-area-inset-top);
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
             padding-bottom: env(safe-area-inset-bottom);
         }
-        
-        /* --- 字体定制 --- */
         .font-sans-custom { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
         .font-proposal-cn { font-family: "KaiTi", "STKaiti", "BiauKai", "楷体", serif; }
         .font-proposal-en { font-family: "Times New Roman", serif; }
-
-        /* --- 动画特效 --- */
-        .stars, .twinkling {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            width: 100%; height: 100%;
-            display: block;
-        }
-        .stars {
-            background: #000 url('https://raw.githubusercontent.com/hyshin/star-background/master/stars.png') repeat top center;
-            z-index: 0;
-        }
-        .twinkling {
-            background: transparent url('https://raw.githubusercontent.com/hyshin/star-background/master/twinkling.png') repeat top center;
-            z-index: 1;
-            animation: move-twink-back 200s linear infinite;
-            opacity: 0.6;
-        }
-        @keyframes move-twink-back {
-            from {background-position:0 0;}
-            to {background-position:-10000px 5000px;}
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { filter: drop-shadow(0 0 15px rgba(253, 224, 71, 0.4)); }
-            50% { filter: drop-shadow(0 0 35px rgba(253, 224, 71, 0.8)); }
-        }
-        .moon-container svg { overflow: visible; }
-        .moon-glow circle, .ring-glow path { animation: pulse-glow 4s infinite ease-in-out; }
-
-        @keyframes fly-in {
-            0% { transform: scale(3) translate(0, 50vh); opacity: 0; }
-            100% { transform: scale(1) translate(0, 0); opacity: 1; }
-        }
-        .shard-animate { animation: fly-in 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .stars { background: #000 url('https://raw.githubusercontent.com/hyshin/star-background/master/stars.png') repeat top center; z-index: 0; }
+        .twinkling { background: transparent url('https://raw.githubusercontent.com/hyshin/star-background/master/twinkling.png') repeat top center; z-index: 1; animation: move-twink-back 200s linear infinite; opacity: 0.6; }
+        @keyframes move-twink-back { from {background-position:0 0;} to {background-position:-10000px 5000px;} }
         
-        /* 棋盘格线 */
-        .gomoku-grid {
-            background-image: 
-                linear-gradient(#64748b 1px, transparent 1px),
-                linear-gradient(90deg, #64748b 1px, transparent 1px);
-            background-size: 35px 35px;
-            background-position: center;
-        }
-
-        /* 动画类 */
         .scale-in { animation: scaleIn 0.3s ease-out forwards; }
         @keyframes scaleIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
-        /* 戒指飞向按钮动画 */
-        @keyframes ring-fly-to-btn {
-            0% { transform: translate(0, 0) scale(1); opacity: 1; }
-            50% { transform: translate(30vw, -10vh) scale(0.5); opacity: 0.8; } /* 抛物线顶点 */
-            100% { transform: translate(25vw, 20vh) scale(0); opacity: 0; } /* 终点(大致) */
+        .animate-shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+        
+        @keyframes ring-fly { 
+            0% { transform: translate(0, 0) scale(1); opacity: 1; } 
+            40% { transform: translate(15vw, -20vh) scale(1.2); opacity: 1; } 
+            100% { transform: translate(25vw, 15vh) scale(0); opacity: 0; } 
         }
-        .animate-ring-fly {
-            animation: ring-fly-to-btn 1.5s ease-in-out forwards;
+        .animate-ring-fly { animation: ring-fly 1.5s ease-in-out forwards; }
+
+        /* 雷达专属样式 - 红色网格线修正 */
+        .radar-board {
+            display: grid;
+            gap: 1px;
+            background-color: #7f1d1d; /* 网格线颜色 */
+            border: 2px solid #ef4444;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+            padding: 2px;
+            border-radius: 0.5rem;
         }
+        .radar-cell {
+            background-color: #1a0505; /* 格子背景 */
+        }
+        
+        .skull-jump { animation: skullJump 0.8s infinite alternate; }
+        @keyframes skullJump { from { transform: translateY(0) scale(1); } to { transform: translateY(-3px) scale(1.1); } }
+        .my-piece-dot { animation: radarPing 1.5s infinite; }
+        @keyframes radarPing { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.5; } }
     </style>
 </head>
 <body>
@@ -108,45 +77,33 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
-        // --- 游戏内容数据库 ---
-        
         const PROPOSAL_TEXT = {
             title: "亲爱的",
-            // 逐行显示的数组
-            lines: [
-                "和你一起度过的每一关，",
-                "都是我生命中最美好的时光。",
-                "我们在游戏中配合默契，",
-                "在生活中相互扶持。",
-                "这轮圆满的月亮，",
-                "代表我对你圆满的爱。"
-            ],
+            lines: ["和你一起度过的每一关，", "都是我生命中最美好的时光。", "我们在游戏中配合默契，", "在生活中相互扶持。", "这轮圆满的月亮，", "代表我对你圆满的爱。"],
             question: "你愿意嫁给我吗？"
         };
 
-        // 50个 TOEFL 高频/浪漫词汇 (扩充信息)
         const WORD_LIBRARY = [
             { word: "ETERNAL", pos: "adj.", ipa: "/ɪˈtɜːnl/", def: "永恒的", ex: "I promise you my eternal love." },
-            { word: "CHERISH", pos: "v.", ipa: "/ˈtʃerɪʃ/", def: "珍爱，爱护", ex: "I will cherish every moment we spend together." },
-            { word: "DEVOTION", pos: "n.", ipa: "/dɪˈvəʊʃn/", def: "奉献，深爱", ex: "His devotion to her was obvious to everyone." },
-            { word: "SERENDIPITY", pos: "n.", ipa: "/ˌserənˈdɪpəti/", def: "机缘巧合", ex: "Meeting you was pure serendipity." },
-            { word: "HARMONY", pos: "n.", ipa: "/ˈhɑːməni/", def: "和谐，融洽", ex: "We lived together in perfect harmony." },
-            { word: "RESILIENT", pos: "adj.", ipa: "/rɪˈzɪliənt/", def: "坚韧的，有弹性的", ex: "Our love is resilient enough to survive any storm." },
-            { word: "ABUNDANT", pos: "adj.", ipa: "/əˈbʌndənt/", def: "丰富的", ex: "We have an abundant supply of happiness." },
-            { word: "BRILLIANT", pos: "adj.", ipa: "/ˈbrɪliənt/", def: "灿烂的，杰出的", ex: "You have a brilliant future ahead." },
-            { word: "ILLUMINATE", pos: "v.", ipa: "/ɪˈluːmɪneɪt/", def: "照亮，启迪", ex: "Your smile illuminates my whole world." },
-            { word: "CELESTIAL", pos: "adj.", ipa: "/səˈlestiəl/", def: "天上的，神圣的", ex: "The moon is a beautiful celestial body." },
-            { word: "PROSPER", pos: "v.", ipa: "/ˈprɒspə(r)/", def: "繁荣，成功", ex: "Together, we will prosper." },
-            { word: "GENUINE", pos: "adj.", ipa: "/ˈdʒenjuɪn/", def: "真诚的，真实的", ex: "It was a movement of genuine affection." },
-            { word: "DESTINY", pos: "n.", ipa: "/ˈdestɪni/", def: "命运", ex: "It was our destiny to meet." },
-            { word: "AFFECTION", pos: "n.", ipa: "/əˈfekʃn/", def: "喜爱，钟爱", ex: "He showed deep affection for her." },
-            { word: "GRATITUDE", pos: "n.", ipa: "/ˈɡrætɪtjuːd/", def: "感激", ex: "I feel eternal gratitude for your love." },
-            { word: "PASSION", pos: "n.", ipa: "/ˈpæʃn/", def: "激情", ex: "A shared passion for adventure." },
-            { word: "SINCERE", pos: "adj.", ipa: "/sɪnˈsɪə(r)/", def: "真挚的", ex: "My sincere apology for the delay." },
+            { word: "CHERISH", pos: "v.", ipa: "/ˈtʃerɪʃ/", def: "珍爱", ex: "I will cherish every moment." },
+            { word: "DEVOTION", pos: "n.", ipa: "/dɪˈvəʊʃn/", def: "奉献", ex: "His devotion was obvious." },
+            { word: "SERENDIPITY", pos: "n.", ipa: "/ˌserənˈdɪpəti/", def: "机缘巧合", ex: "Meeting you was serendipity." },
+            { word: "HARMONY", pos: "n.", ipa: "/ˈhɑːməni/", def: "和谐", ex: "Living in perfect harmony." },
+            { word: "RESILIENT", pos: "adj.", ipa: "/rɪˈzɪliənt/", def: "坚韧的", ex: "Our love is resilient." },
+            { word: "ABUNDANT", pos: "adj.", ipa: "/əˈbʌndənt/", def: "丰富的", ex: "Abundant happiness." },
+            { word: "BRILLIANT", pos: "adj.", ipa: "/ˈbrɪliənt/", def: "灿烂的", ex: "A brilliant future." },
+            { word: "ILLUMINATE", pos: "v.", ipa: "/ɪˈluːmɪneɪt/", def: "照亮", ex: "You illuminate my world." },
+            { word: "CELESTIAL", pos: "adj.", ipa: "/səˈlestiəl/", def: "神圣的", ex: "A celestial body." },
+            { word: "PROSPER", pos: "v.", ipa: "/ˈprɒspə(r)/", def: "繁荣", ex: "We will prosper together." },
+            { word: "GENUINE", pos: "adj.", ipa: "/ˈdʒenjuɪn/", def: "真诚的", ex: "Genuine affection." },
+            { word: "DESTINY", pos: "n.", ipa: "/ˈdestɪni/", def: "命运", ex: "It was our destiny." },
+            { word: "AFFECTION", pos: "n.", ipa: "/əˈfekʃn/", def: "喜爱", ex: "Deep affection." },
+            { word: "GRATITUDE", pos: "n.", ipa: "/ˈɡrætɪtjuːd/", def: "感激", ex: "Eternal gratitude." },
+            { word: "PASSION", pos: "n.", ipa: "/ˈpæʃn/", def: "激情", ex: "A shared passion." },
+            { word: "SINCERE", pos: "adj.", ipa: "/sɪnˈsɪə(r)/", def: "真挚的", ex: "My sincere apology." },
             { word: "VIBRANT", pos: "adj.", ipa: "/ˈvaɪbrənt/", def: "充满活力的", ex: "A vibrant relationship." },
-            { word: "SPLENDID", pos: "adj.", ipa: "/ˈsplendɪd/", def: "辉煌的，极好的", ex: "We had a splendid time." },
+            { word: "SPLENDID", pos: "adj.", ipa: "/ˈsplendɪd/", def: "极好的", ex: "A splendid time." },
             { word: "PRECIOUS", pos: "adj.", ipa: "/ˈpreʃəs/", def: "珍贵的", ex: "Time is precious." }
-            // ... (此处省略部分以节省空间，实际应用应包含所有50个)
         ];
 
         const CHESS_LEVELS = [
@@ -162,35 +119,19 @@
             { id: 10, size: 5, grid: [[0,0,4,0,0],[0,1,4,1,0],[4,4,3,4,4],[0,1,4,1,0],[0,0,4,0,0]], par: 8 }
         ];
 
-        const GOMOKU_LEVELS = [
-            { id: 1, pieces: [{r:4,c:3,t:1},{r:4,c:4,t:1},{r:4,c:6,t:1},{r:4,c:7,t:1}, {r:5,c:5,t:2}, {r:3,c:5,t:2}], winSpot: {r:4, c:5} },
-            { id: 2, pieces: [{r:2,c:2,t:1},{r:3,c:3,t:1},{r:5,c:5,t:1}, {r:2,c:3,t:2},{r:3,c:2,t:2}], winSpot: {r:4, c:4} },
-            { id: 3, pieces: [{r:5,c:5,t:1},{r:5,c:6,t:1},{r:5,c:7,t:1}, {r:4,c:6,t:2},{r:6,c:6,t:2}], winSpot: {r:5, c:4} },
-            { id: 4, pieces: [{r:3,c:3,t:1},{r:3,c:4,t:1},{r:4,c:3,t:1}, {r:2,c:2,t:2},{r:5,c:5,t:2}], winSpot: {r:4, c:4} },
-            { id: 5, pieces: [{r:4,c:4,t:2},{r:4,c:5,t:2},{r:4,c:6,t:2},{r:3,c:5,t:1},{r:5,c:5,t:1},{r:3,c:4,t:1},{r:3,c:6,t:1}], winSpot: {r:2, c:5} },
-            { id: 6, pieces: [{r:2,c:2,t:1},{r:2,c:3,t:1},{r:2,c:5,t:1},{r:3,c:3,t:2},{r:3,c:4,t:2}], winSpot: {r:2, c:4} },
-            { id: 7, pieces: [{r:3,c:3,t:1},{r:4,c:3,t:1},{r:6,c:3,t:1},{r:5,c:2,t:2},{r:5,c:4,t:2}], winSpot: {r:5, c:3} },
-            { id: 8, pieces: [{r:3,c:3,t:1},{r:4,c:4,t:1},{r:6,c:6,t:1},{r:3,c:4,t:2},{r:4,c:3,t:2}], winSpot: {r:5, c:5} },
-            { id: 9, pieces: [{r:2,c:6,t:1},{r:3,c:5,t:1},{r:5,c:3,t:1},{r:3,c:6,t:2},{r:4,c:5,t:2}], winSpot: {r:4, c:4} },
-            { id: 10, pieces: [{r:1,c:1,t:1},{r:2,c:2,t:1},{r:3,c:3,t:1},{r:5,c:5,t:1},{r:2,c:3,t:2},{r:3,c:2,t:2}], winSpot: {r:4, c:4} }
-        ];
-
         const SUDOKU_LEVELS = [
             { id: 1, initial: [[1,0,0,4],[0,0,0,0],[0,0,0,0],[2,0,0,3]], solution: [[1,2,3,4],[3,4,1,2],[4,3,2,1],[2,1,4,3]] },
-            { id: 2, initial: [[0,2,0,0],[3,0,0,2],[1,0,0,4],[0,0,2,0]], solution: [[4,2,3,1],[3,1,4,2],[1,3,2,4],[2,4,1,3]] },
+            { id: 2, initial: [[0,2,0,0],[3,0,0,2],[1,0,0,4],[0,0,0,0]], solution: [[4,2,3,1],[3,1,4,2],[1,3,2,4],[2,4,1,3]] },
             { id: 3, initial: [[0,0,0,0],[0,1,2,0],[0,3,4,0],[0,0,0,0]], solution: [[1,2,3,4],[4,1,2,3],[2,3,4,1],[3,4,1,2]] },
             { id: 4, initial: [[0,3,0,0],[1,0,0,0],[0,0,0,4],[0,0,2,0]], solution: [[2,3,4,1],[1,4,3,2],[3,2,1,4],[4,1,2,3]] },
-            { id: 5, initial: [[4,0,0,0],[0,2,0,0],[0,0,3,0],[0,0,0,1]], solution: [[4,3,1,2],[1,2,4,3],[2,1,3,4],[3,4,2,1]] },
-            { id: 6, initial: [[0,4,0,0],[0,0,1,0],[0,3,0,0],[0,0,4,0]], solution: [[3,4,2,1],[2,1,3,4],[4,3,1,2],[1,2,4,3]] },
-            { id: 7, initial: [[2,0,4,0],[0,0,0,0],[0,0,0,0],[0,3,0,1]], solution: [[2,1,4,3],[3,4,1,2],[1,2,3,4],[4,3,2,1]] },
-            { id: 8, initial: [[0,0,1,0],[3,0,0,0],[0,0,0,2],[0,4,0,0]], solution: [[2,3,1,4],[3,1,4,2],[4,1,3,2],[1,4,2,3]] }, 
-            { id: 9, initial: [[1,2,0,0],[0,0,0,0],[0,0,0,0],[0,0,3,4]], solution: [[1,2,4,3],[3,4,2,1],[4,3,1,2],[2,1,3,4]] },
-            { id: 10, initial: [[0,0,0,2],[0,1,0,0],[0,0,4,0],[3,0,0,0]], solution: [[4,3,1,2],[2,1,3,4],[1,2,4,3],[3,4,2,1]] }
+            { id: 5, initial: [[4,0,0,0],[0,2,0,0],[0,0,3,0],[0,0,0,1]], solution: [[4,3,1,2],[1,2,4,3],[2,1,3,4],[3,4,2,1]] }
         ];
 
-        // --- 游戏生成器 ---
-        const generateGameStructure = () => {
+        // --- 关卡生成器 ---
+        const generateLevelSequence = () => {
             let wordPool = [...WORD_LIBRARY].sort(() => 0.5 - Math.random());
+            const shuffledChess = [...CHESS_LEVELS].sort(() => 0.5 - Math.random());
+            const shuffledSudoku = [...SUDOKU_LEVELS].sort(() => 0.5 - Math.random());
             
             const getUniqueWords = (count) => {
                 if (wordPool.length < count) wordPool = [...WORD_LIBRARY].sort(() => 0.5 - Math.random());
@@ -208,79 +149,98 @@
                 return opts.sort(() => 0.5 - Math.random());
             };
 
-            const getRandomPuzzle = () => {
-                const types = ['knight', 'gomoku', 'sudoku', 'meteor'];
-                const type = types[Math.floor(Math.random() * types.length)];
-                
-                let data = {};
-                if (type === 'knight') data = { id: CHESS_LEVELS[Math.floor(Math.random() * CHESS_LEVELS.length)].id };
-                if (type === 'gomoku') data = GOMOKU_LEVELS[Math.floor(Math.random() * GOMOKU_LEVELS.length)];
-                if (type === 'sudoku') data = SUDOKU_LEVELS[Math.floor(Math.random() * SUDOKU_LEVELS.length)];
-                if (type === 'meteor') data = {}; 
+            const levels = [];
+            // 20关配置: 6 x Chess, 4 x Sudoku, 10 x Word (Mixed, NO Connect)
+            const gameTypes = [
+                ...Array(6).fill('knight'),
+                ...Array(4).fill('sudoku'),
+                ...Array(10).fill('word_mix')
+            ].sort(() => 0.5 - Math.random());
 
-                return { type, data };
-            };
-
-            const getWordGames = (count) => {
-                const words = getUniqueWords(count);
-                return words.map(item => {
+            gameTypes.forEach((type, i) => {
+                if (type === 'knight') {
+                    levels.push({ type: 'knight', data: { id: shuffledChess[i % shuffledChess.length].id } });
+                } else if (type === 'sudoku') {
+                    levels.push({ type: 'sudoku', data: shuffledSudoku[i % shuffledSudoku.length] });
+                } else {
                     const rand = Math.random();
-                    if (rand < 0.33) {
-                        const w2 = getUniqueWords(1)[0];
-                        return { type: 'scramble', data: { p1Word: item, p2Word: w2 } };
-                    } else if (rand < 0.66) {
-                        return { type: 'connect', data: { ...item } };
+                    const words = getUniqueWords(rand < 0.4 ? 2 : 1);
+                    if (rand < 0.4) {
+                        levels.push({ type: 'scramble', data: { p1Word: words[0], p2Word: words[1] } });
                     } else {
-                        return {
-                            type: 'word',
-                            data: {
-                                ...item,
-                                hintPattern: Array(item.word.length).fill(true).map(() => Math.random() > 0.45),
-                                options: generateOptions(item.word),
-                                startPlayer: Math.random() > 0.5 ? 1 : 2
-                            }
-                        };
+                        // Only Word Puzzle (Deleted Connect as requested)
+                        levels.push({ type: 'word', data: { ...words[0], hintPattern: Array(words[0].word.length).fill(true).map(()=>Math.random()>0.45), options: generateOptions(words[0].word), startPlayer: i%2===0?1:2 } });
                     }
-                });
-            };
+                }
+            });
 
-            const generateChapter = (index) => {
-                const wordCount = 3; 
-                const puzzleCount = 3;
-                
-                const wordGames = getWordGames(wordCount);
-                const puzzleGames = Array(puzzleCount).fill(null).map(() => getRandomPuzzle());
-                
-                const games = [...wordGames, ...puzzleGames].sort(() => 0.5 - Math.random());
-                const titles = ["初识", "探索", "磨合", "默契", "心有灵犀", "圆满"];
-
-                return {
-                    title: `Chapter ${index + 1}: ${titles[index] || "旅程"}`,
-                    games: games
-                };
-            };
-
-            return Array(6).fill(null).map((_, i) => generateChapter(i));
+            const indices = Array.from({length: 20}, (_, k) => k);
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            const fragmentIndices = new Set(indices.slice(0, 5));
+            
+            return levels.map((lvl, idx) => ({ ...lvl, hasFragment: fragmentIndices.has(idx), index: idx }));
         };
 
-        // --- 组件 ---
+        // --- UI 组件 ---
+        const HintPanel = ({ data, extraContent }) => {
+            if (!data) return null;
+            return (
+                <div className="flex flex-col items-center justify-center h-full px-12 z-10 relative text-center">
+                    <div className="bg-slate-800 p-6 rounded-2xl border border-yellow-500/20 shadow-[0_0_30px_rgba(234,179,8,0.1)] w-full max-w-md">
+                        <h3 className="text-xs text-yellow-500 mb-2 font-bold tracking-widest font-sans-custom">CLUE CARD</h3>
+                        {!extraContent && (
+                            <div className="text-4xl font-mono tracking-widest text-yellow-100 mb-4 font-bold opacity-90 break-words">
+                                {data.word.split('').map((c, i) => data.hintPattern && data.hintPattern[i] ? c : "_").join(" ")}
+                            </div>
+                        )}
+                        <div className="space-y-2 text-left bg-black/40 p-4 rounded-lg">
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-yellow-400 font-bold italic">{data.pos}</span>
+                                <span className="text-slate-400 font-serif">[{data.ipa}]</span>
+                            </div>
+                            <div className="text-xl text-white font-proposal-cn">{data.def}</div>
+                            {extraContent}
+                            <div className="text-slate-300 text-sm italic font-sans-custom leading-relaxed border-t border-white/10 pt-2 mt-2">"{data.ex}"</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const GameInstruction = ({ text }) => (
+            <div className="absolute top-2 w-full text-center pointer-events-none z-30">
+                <span className="bg-black/60 text-yellow-300 text-sm px-4 py-2 rounded-full border border-yellow-500/30 backdrop-blur-md shadow-lg font-sans-custom tracking-wider">
+                    <i className="ph-fill ph-info mr-2"></i>{text}
+                </span>
+            </div>
+        );
+
+        const UndoButton = ({ onUndo, disabled }) => (
+            <button onClick={onUndo} disabled={disabled} className={`absolute bottom-6 left-6 px-4 py-2 bg-slate-700/80 text-white rounded-full z-40 border border-slate-500 transition-all flex items-center gap-2 ${disabled ? 'opacity-30' : 'opacity-100 active:scale-95'}`}>
+                <i className="ph-bold ph-arrow-u-up-left"></i> 撤销
+            </button>
+        );
 
         const DebugButton = ({ onClick }) => (
-            <button 
-                onClick={(e) => { e.stopPropagation(); onClick(); }}
-                className="absolute bottom-12 right-12 px-4 py-2 bg-red-900/40 text-red-200/50 text-xs rounded-full z-50 border border-red-500/20 active:bg-red-600 active:text-white font-sans-custom hover:scale-105 transition-all"
-                style={{ backdropFilter: 'blur(4px)' }}
-            >
+            <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="absolute bottom-6 right-6 px-4 py-2 bg-red-900/40 text-red-200/50 text-xs rounded-full z-50 border border-red-500/20 active:bg-red-600 active:text-white font-sans-custom hover:scale-105 transition-all backdrop-blur-sm">
                 DEBUG
             </button>
         );
 
+        const NextLevelButton = ({ onClick }) => (
+            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
+                <button onClick={onClick} className="px-8 py-3 bg-green-600/90 text-white rounded-full text-lg font-bold shadow-[0_0_20px_rgba(22,163,74,0.6)] backdrop-blur border border-green-400">
+                    进入下一关 &gt;&gt;
+                </button>
+            </div>
+        );
+
         const HintButton = ({ hints, onHint }) => (
             <div className="flex flex-col items-center gap-1 group">
-                <button 
-                    onClick={onHint}
-                    className={`flex items-center justify-center transition-all ${hints <= 0 ? 'opacity-80' : 'opacity-100 hover:scale-110 active:scale-95'}`}
-                >
+                <button onClick={onHint} className={`flex items-center justify-center transition-all ${hints <= 0 ? 'opacity-100 animate-pulse' : 'opacity-100 hover:scale-110 active:scale-95'}`}>
                     <i className={`ph-fill ph-lightbulb text-3xl drop-shadow-[0_0_10px_rgba(250,204,21,0.5)] ${hints > 0 ? 'text-yellow-400' : 'text-slate-500'}`}></i>
                 </button>
                 <div className="flex items-center gap-1">
@@ -298,162 +258,100 @@
             </div>
         );
 
-        const MoonDisplay = ({ progress, isFull, isRing }) => {
+        // --- 月亮/戒指展示 (Slightly Reduced Size) ---
+        const MoonDisplay = ({ progress, isFull, isRing, stage }) => {
             return (
-                <div className={`relative w-64 h-64 p-4 transition-all duration-1000 ${isFull && !isRing ? 'scale-125' : ''}`}>
-                    {isRing ? (
-                        <div className="w-full h-full flex items-center justify-center animate-[pulse_3s_ease-in-out_infinite]">
-                            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_30px_rgba(255,255,255,0.8)] ring-glow">
-                                <circle cx="50" cy="55" r="35" fill="none" stroke="#fbbf24" strokeWidth="6" />
-                                <path d="M50 15 L58 30 L50 45 L42 30 Z" fill="#e0f2fe" stroke="white" strokeWidth="1" className="animate-bounce" />
-                                <path d="M50 15 L65 10 L80 15" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-                            </svg>
-                        </div>
-                    ) : (
+                <div className={`relative w-full h-full flex items-center justify-center transition-all duration-1000`}>
+                    
+                    {/* Ring Base (Band) */}
+                    <div className={`absolute w-full h-full flex items-center justify-center transition-opacity duration-1000 ${stage >= 3 ? 'opacity-100' : 'opacity-0'}`}>
+                         <svg viewBox="0 0 100 100" className="w-64 h-64 drop-shadow-[0_0_20px_rgba(255,255,255,0.6)] overflow-visible">
+                            <defs>
+                                <linearGradient id="silverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#e2e8f0" />
+                                    <stop offset="50%" stopColor="#f8fafc" />
+                                    <stop offset="100%" stopColor="#cbd5e1" />
+                                </linearGradient>
+                            </defs>
+                            {/* Band: Perfect Circle */}
+                            <circle cx="50" cy="65" r="28" fill="none" stroke="url(#silverGradient)" strokeWidth="6" />
+                            {/* Setting */}
+                            <path d="M40 37 L40 28 L60 28 L60 37" fill="none" stroke="url(#silverGradient)" strokeWidth="3" />
+                            <path d="M42 28 L50 32 L58 28" fill="none" stroke="url(#silverGradient)" strokeWidth="2" />
+                        </svg>
+                    </div>
+
+                    {/* Moon/Diamond - Floating Above (Scale 0.38) */}
+                    <div className={`relative w-64 h-64 p-4 transition-all duration-[2000ms] ease-in-out
+                        ${stage >= 2 ? 'scale-[0.38] -translate-y-16 z-10' : (isFull ? 'scale-125' : 'scale-100')}
+                    `}>
                         <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl moon-glow overflow-visible">
-                            <circle cx="50" cy="50" r="45" fill="#334155" stroke="none" opacity="0.5" />
                             <defs>
                                 <radialGradient id="moonGradient" cx="50%" cy="50%" r="50%" fx="30%" fy="30%">
                                     <stop offset="0%" stopColor="#fef08a" />
                                     <stop offset="90%" stopColor="#facc15" />
                                     <stop offset="100%" stopColor="#eab308" />
                                 </radialGradient>
-                                <filter id="texture" x="0%" y="0%" width="100%" height="100%">
-                                    <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" />
-                                    <feColorMatrix type="saturate" values="0" />
-                                    <feBlend mode="multiply" in2="SourceGraphic" />
+                                <filter id="glow">
+                                    <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                                    <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
                                 </filter>
                             </defs>
-                            <g>
-                                <circle cx="50" cy="50" r="45" fill="url(#moonGradient)" 
-                                    style={{
-                                        clipPath: `inset(0% ${100 - (progress * 100)}% 0% 0%)`,
-                                        transition: 'clip-path 2.5s cubic-bezier(0.4, 0, 0.2, 1)'
-                                    }}
-                                />
-                                <circle cx="50" cy="50" r="45" fill="url(#moonGradient)" filter="url(#texture)" opacity="0.3"
-                                    style={{
-                                        clipPath: `inset(0% ${100 - (progress * 100)}% 0% 0%)`,
-                                        transition: 'clip-path 2.5s cubic-bezier(0.4, 0, 0.2, 1)'
-                                    }}
-                                />
-                            </g>
+                            <circle cx="50" cy="50" r="45" fill="url(#moonGradient)" filter="url(#glow)" 
+                                style={{
+                                    clipPath: `inset(0% ${100 - (progress * 100)}% 0% 0%)`,
+                                    transition: 'clip-path 1.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                                }}
+                            />
                         </svg>
-                    )}
+                        {stage >= 2 && (
+                            <div className="absolute inset-0 bg-white/50 rounded-full animate-pulse blur-xl mix-blend-overlay"></div>
+                        )}
+                    </div>
                 </div>
             );
         };
 
-        // --- 充能小游戏 ---
-        const HintRefillGame = ({ onComplete }) => {
-            const [score, setScore] = useState(0);
-            const [timeLeft, setTimeLeft] = useState(33); // 3s countdown + 30s game
-            const [drops, setDrops] = useState([]);
-            const dropIdRef = useRef(0);
-
-            useEffect(() => {
-                const timer = setInterval(() => {
-                    setTimeLeft(t => {
-                        if (t <= 1) {
-                            clearInterval(timer);
-                            const earned = Math.floor(score / 10);
-                            onComplete(earned); // Return earned hints
-                            return 0;
-                        }
-                        return t - 1;
-                    });
-                }, 1000);
-                return () => clearInterval(timer);
-            }, [score]);
-
-            useEffect(() => {
-                if(timeLeft > 30) return; // Countdown phase
-                const spawn = setInterval(() => {
-                    const id = dropIdRef.current++;
-                    const left = Math.random() * 90 + 5;
-                    setDrops(prev => [...prev, { id, left, top: -10 }]);
-                    // Remove after drop
-                    setTimeout(() => {
-                        setDrops(prev => prev.filter(d => d.id !== id));
-                    }, 3000);
-                }, 400); // Fast spawn
-                return () => clearInterval(spawn);
-            }, [timeLeft]);
-
-            // Animation loop for smooth falling
-            useEffect(() => {
-                if(timeLeft > 30) return;
-                const anim = setInterval(() => {
-                    setDrops(prev => prev.map(d => ({ ...d, top: d.top + 2 }))); // Fall speed
-                }, 30);
-                return () => clearInterval(anim);
-            }, [timeLeft]);
-
-            const handleCatch = (id) => {
-                setDrops(prev => prev.filter(d => d.id !== id));
-                setScore(s => s + 1);
-            };
-
-            const isCountdown = timeLeft > 30;
-            const gameTime = isCountdown ? 30 : timeLeft;
-
-            return (
-                <div className="absolute inset-0 z-[60] bg-black/90 flex flex-col items-center justify-center overflow-hidden">
-                    {isCountdown ? (
-                        <div className="text-[10rem] text-yellow-400 font-bold animate-ping">{timeLeft - 30}</div>
-                    ) : (
-                        <>
-                            <div className="absolute top-8 text-white font-sans-custom text-xl z-10">
-                                收集光点! {score} (每10个换1次提示) <br/> 剩余时间: {gameTime}s
-                            </div>
-                            {drops.map(d => (
-                                <div key={d.id}
-                                    onMouseDown={() => handleCatch(d.id)}
-                                    onTouchStart={() => handleCatch(d.id)}
-                                    className="absolute w-12 h-12 rounded-full bg-yellow-200 blur-sm cursor-pointer shadow-[0_0_15px_rgba(253,224,71,0.8)]"
-                                    style={{ left: `${d.left}%`, top: `${d.top}%` }}
-                                ></div>
-                            ))}
-                        </>
-                    )}
-                </div>
-            );
-        };
-
-        // --- 单词提示面板 (富文本) ---
-        const HintPanel = ({ data }) => (
-            <div className="flex flex-col items-center justify-center h-full px-12 z-10 relative text-center">
-                <div className="bg-yellow-900/20 backdrop-blur-md p-6 rounded-2xl border border-yellow-500/20 shadow-[0_0_30px_rgba(234,179,8,0.1)] w-full max-w-md">
-                    <h3 className="text-xs text-yellow-500 mb-2 font-bold tracking-widest font-sans-custom">CLUE CARD</h3>
-                    <div className="text-4xl font-mono tracking-widest text-yellow-100 mb-4 font-bold opacity-90 break-words">
-                        {data.word.split('').map((c, i) => data.hintPattern[i] ? c : "_").join(" ")}
-                    </div>
-                    <div className="space-y-2 text-left bg-black/20 p-4 rounded-lg">
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-yellow-400 font-bold italic">{data.pos}</span>
-                            <span className="text-slate-400 font-serif">[{data.ipa}]</span>
-                        </div>
-                        <div className="text-xl text-white font-proposal-cn">{data.def}</div>
-                        <div className="text-slate-300 text-sm italic font-sans-custom leading-relaxed border-t border-white/10 pt-2 mt-2">
-                            "{data.ex}"
-                        </div>
-                    </div>
+        const SuccessOverlay = () => (
+            <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+                <div className="bg-black/70 backdrop-blur-md px-12 py-6 rounded-2xl border border-green-500/50 shadow-2xl scale-in">
+                    <h2 className="text-5xl font-bold text-green-400 font-proposal-en tracking-widest drop-shadow-[0_0_15px_rgba(74,222,128,0.8)]">SUCCESS!</h2>
                 </div>
             </div>
         );
 
-        // --- 游戏组件 (Updated to use rich HintPanel) ---
+        const FragmentNotification = () => (
+            <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none animate-bounce">
+                <div className="bg-yellow-900/90 backdrop-blur-md px-8 py-4 rounded-full border border-yellow-400 shadow-[0_0_30px_rgba(234,179,8,0.6)] flex items-center gap-4">
+                    <div className="w-8 h-8 bg-yellow-400 rounded-full shadow-[0_0_10px_white]"></div>
+                    <span className="text-xl font-bold text-yellow-100 font-proposal-cn">获得月光碎片!</span>
+                </div>
+            </div>
+        );
+
+        const HintRefillGame = ({ onComplete }) => {
+            const [score, setScore] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(33); 
+            const [drops, setDrops] = useState([]);
+            const dropIdRef = useRef(0);
+            useEffect(() => { const t=setInterval(()=>setTimeLeft(v=>{if(v<=1){clearInterval(t);onComplete(Math.floor(score/10));return 0}return v-1}),1000); return ()=>clearInterval(t)},[score]);
+            useEffect(() => { if(timeLeft>30)return; const s=setInterval(()=>{const id=dropIdRef.current++;setDrops(p=>[...p,{id,left:Math.random()*90+5,top:-10}]);setTimeout(()=>setDrops(p=>p.filter(d=>d.id!==id)),3000)},300); return ()=>clearInterval(s)},[timeLeft]);
+            useEffect(() => { if(timeLeft>30)return; const a=setInterval(()=>setDrops(p=>p.map(d=>({...d,top:d.top+2}))),30); return ()=>clearInterval(a)},[timeLeft]);
+            return <div className="absolute inset-0 z-[60] bg-black/90 flex flex-col items-center justify-center">{timeLeft>30?<div className="text-9xl text-yellow-400 animate-ping">{timeLeft-30}</div>:<><div className="absolute top-20 text-white text-center text-xl">收集光点! {score} (10=1提示)</div>{drops.map(d=><div key={d.id} onTouchStart={()=>setScore(s=>s+1)||setDrops(p=>p.filter(x=>x.id!==d.id))} onMouseDown={()=>setScore(s=>s+1)||setDrops(p=>p.filter(x=>x.id!==d.id))} className="absolute w-14 h-14 bg-yellow-200 rounded-full blur-md cursor-pointer" style={{left:d.left+'%',top:d.top+'%'}}></div>)}</>}</div>
+        };
+
+        // --- 游戏组件 ---
+
         const GameWordPuzzle = ({ data, onComplete, hintSignal }) => {
+            if (!data) return null;
             const [selectedChars, setSelectedChars] = useState([]);
             const [feedback, setFeedback] = useState(""); 
+            const [debugSolved, setDebugSolved] = useState(false);
             const isP1Controlling = data.startPlayer === 1;
 
             useEffect(() => {
-                if(hintSignal > 0) {
-                    const nextCharIndex = selectedChars.length;
-                    if(nextCharIndex < data.word.length) {
-                        handleCharClick(data.word[nextCharIndex]);
-                    }
+                if(hintSignal > 0 && selectedChars.length < data.word.length) {
+                    handleCharClick(data.word[selectedChars.length]);
                 }
             }, [hintSignal]);
 
@@ -463,32 +361,32 @@
                 if (newSelection.length === data.word.length) {
                     if (newSelection.join("") === data.word) {
                         setFeedback("correct");
-                        setTimeout(onComplete, 1200);
+                        onComplete();
                     } else {
                         setFeedback("wrong");
-                        setTimeout(() => {
-                            setSelectedChars([]);
-                            setFeedback("");
-                        }, 800);
+                        setTimeout(() => { setSelectedChars([]); setFeedback(""); }, 800);
                     }
                 }
             };
 
-            const ControlPanel = ({ currentInput, feedback, onInput }) => (
+            const debugSolve = () => {
+                setSelectedChars(data.word.split(''));
+                setFeedback("correct");
+                setDebugSolved(true);
+            };
+
+            const ControlPanel = () => (
                 <div className="flex flex-col items-center justify-center h-full px-8 z-10 relative">
-                    <div className="bg-slate-800/80 backdrop-blur-md p-6 rounded-2xl border border-white/10 shadow-xl w-full max-w-md">
+                    <div className="bg-slate-800 p-6 rounded-2xl border border-white/10 shadow-xl w-full max-w-md">
                         <h3 className="text-lg text-green-400 mb-6 font-bold text-center tracking-widest font-sans-custom">SPELL THE WORD</h3>
-                        <div className={`mb-8 h-14 flex items-center justify-center text-3xl font-bold tracking-[0.2em] border-b-2 transition-colors w-full font-serif ${feedback === 'wrong' ? 'border-red-500 text-red-400' : (feedback === 'correct' ? 'border-green-500 text-green-400' : 'border-white/30')}`}>
-                            {currentInput.length > 0 ? currentInput.join(" ") : <span className="text-white/20 text-xl font-normal">点击字母拼写</span>}
+                        <div className={`mb-8 h-14 flex items-center justify-center text-3xl font-bold tracking-[0.2em] border-b-2 transition-colors w-full font-serif ${feedback === 'wrong' ? 'border-red-500 text-red-400' : 'border-white/30'}`}>
+                            {selectedChars.join(" ") || "..."}
                         </div>
                         <div className="grid grid-cols-5 gap-2">
                             {data.options.map((char, idx) => (
-                                <button key={idx} 
-                                    className="aspect-square bg-slate-700/50 hover:bg-slate-600 rounded text-xl font-bold border border-white/10 active:scale-95 transition-all shadow-lg font-sans-custom"
-                                    onClick={() => onInput(char)}>{char}</button>
+                                <button key={idx} onClick={() => handleCharClick(char)} className="aspect-square bg-slate-700/50 hover:bg-slate-600 rounded text-xl font-bold border border-white/10 active:scale-95 transition-all">{char}</button>
                             ))}
-                            <button className="aspect-square col-span-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded flex items-center justify-center active:scale-95 transition-all"
-                                onClick={() => setSelectedChars(prev => prev.slice(0, -1))}><i className="ph ph-backspace text-xl"></i></button>
+                            <button className="aspect-square col-span-1 bg-red-500/20 text-red-300 rounded" onClick={() => setSelectedChars(prev => prev.slice(0, -1))}><i className="ph ph-backspace"></i></button>
                         </div>
                     </div>
                 </div>
@@ -496,26 +394,25 @@
 
             return (
                 <div className="flex w-full h-full relative">
-                    <DebugButton onClick={() => onComplete()} />
-                    <div className="w-1/2 border-r border-white/10 relative">
-                        {isP1Controlling ? <ControlPanel currentInput={selectedChars} feedback={feedback} onInput={handleCharClick} /> : <HintPanel data={data} />}
-                        <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 font-sans-custom">PLAYER 1</div>
-                    </div>
-                    <div className="w-1/2 relative">
-                        {!isP1Controlling ? <ControlPanel currentInput={selectedChars} feedback={feedback} onInput={handleCharClick} /> : <HintPanel data={data} />}
-                        <div className="absolute top-4 right-4 text-xs font-bold text-slate-500 font-sans-custom">PLAYER 2</div>
-                    </div>
+                    <GameInstruction text={isP1Controlling ? "P1根据P2的提示拼写单词" : "P2根据P1的提示拼写单词"} />
+                    <UndoButton onUndo={() => setSelectedChars(prev => prev.slice(0, -1))} disabled={selectedChars.length === 0} />
+                    <DebugButton onClick={debugSolve} />
+                    {debugSolved && <NextLevelButton onClick={onComplete} />}
+                    <div className="w-1/2 border-r border-white/10 relative">{isP1Controlling ? <ControlPanel /> : <HintPanel data={data} extraContent={<div className="flex gap-1 justify-center my-2">{data.word.split('').map((_,i)=><div key={i} className="w-6 h-1 bg-white/30 rounded"></div>)}</div>} />}</div>
+                    <div className="w-1/2 relative">{!isP1Controlling ? <ControlPanel /> : <HintPanel data={data} extraContent={<div className="flex gap-1 justify-center my-2">{data.word.split('').map((_,i)=><div key={i} className="w-6 h-1 bg-white/30 rounded"></div>)}</div>} />}</div>
                 </div>
             );
         };
 
         const GameScramble = ({ data, onComplete, hintSignal }) => {
+            if (!data) return null;
             const [p1Input, setP1Input] = useState([]);
             const [p2Input, setP2Input] = useState([]);
             const [p1Solved, setP1Solved] = useState(false);
             const [p2Solved, setP2Solved] = useState(false);
             const [p1Chars, setP1Chars] = useState([]);
             const [p2Chars, setP2Chars] = useState([]);
+            const [debugSolved, setDebugSolved] = useState(false);
 
             useEffect(() => {
                 setP1Chars(data.p1Word.word.split('').sort(() => 0.5 - Math.random()));
@@ -524,127 +421,56 @@
 
             useEffect(() => {
                 if(hintSignal > 0) {
-                    if(!p1Solved) {
-                        const next = data.p1Word.word[p1Input.length];
-                        if(next) setP1Input(prev => [...prev, next]);
-                    }
-                    if(!p2Solved) {
-                        const next = data.p2Word.word[p2Input.length];
-                        if(next) setP2Input(prev => [...prev, next]);
-                    }
+                    if(!p1Solved) setP1Input(prev => [...prev, data.p1Word.word[prev.length] || '']);
+                    if(!p2Solved) setP2Input(prev => [...prev, data.p2Word.word[prev.length] || '']);
                 }
             }, [hintSignal]);
 
             useEffect(() => {
                 if(p1Input.join("") === data.p1Word.word) setP1Solved(true);
                 else if(p1Input.length >= data.p1Word.word.length) setTimeout(() => setP1Input([]), 500);
-
                 if(p2Input.join("") === data.p2Word.word) setP2Solved(true);
-                else if(p2Input.length >= data.p2Word.word.length) setTimeout(() => setP2Input([]), 500);
-            }, [p1Input, p2Input]);
+                else if(p2Input.length >= data.p2Word.word.length) setTimeout(() => setP2Input([]),500);
+                if(p1Solved && p2Solved && !debugSolved) onComplete();
+            }, [p1Input, p2Input, p1Solved, p2Solved]);
 
-            useEffect(() => {
-                if(p1Solved && p2Solved) setTimeout(onComplete, 1000);
-            }, [p1Solved, p2Solved]);
+            const debugSolve = () => {
+                setP1Input(data.p1Word.word.split(''));
+                setP2Input(data.p2Word.word.split(''));
+                setP1Solved(true);
+                setP2Solved(true);
+                setDebugSolved(true);
+            };
 
             const ScrambleBoard = ({ wordObj, input, setInput, isSolved, chars, label }) => (
                 <div className="flex flex-col items-center justify-center h-full px-8 relative">
                     <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 font-sans-custom">{label}</div>
-                    <div className="text-xl text-yellow-500 font-serif mb-2">{wordObj.def}</div>
-                    <div className={`text-3xl font-bold tracking-widest mb-6 border-b-2 p-2 min-h-[3rem] transition-colors ${isSolved ? 'text-green-400 border-green-500' : 'text-white border-slate-600'}`}>
-                        {input.join("")}
+                    <div className="text-base text-yellow-500 font-serif mb-1 flex gap-2 justify-center">
+                        <span>{wordObj.def}</span>
+                        <span className="opacity-70 text-xs mt-1">[{wordObj.pos} {wordObj.ipa}]</span>
                     </div>
+                    {/* Placeholder */}
+                    <div className="flex gap-2 mb-4">
+                        {wordObj.word.split('').map((_, i) => <div key={i} className={`w-4 h-1 rounded-full ${input.length > i ? 'bg-green-500' : 'bg-white/20'}`}></div>)}
+                    </div>
+                    <div className={`text-3xl font-bold tracking-widest mb-6 border-b-2 p-2 min-h-[3rem] transition-colors ${isSolved ? 'text-green-400 border-green-500' : 'text-white border-slate-600'}`}>{input.join("")}</div>
                     <div className="flex flex-wrap gap-2 justify-center max-w-xs">
                         {chars.map((char, i) => (
                             <button key={i} onClick={() => setInput(prev => [...prev, char])} className="w-12 h-12 bg-slate-700 rounded text-xl font-bold active:scale-95 shadow-lg border-b-2 border-slate-900">{char}</button>
                         ))}
-                        <button onClick={() => setInput([])} className="w-12 h-12 bg-red-900/50 rounded flex items-center justify-center text-red-200"><i className="ph ph-arrow-counter-clockwise"></i></button>
                     </div>
-                    {isSolved && <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-10"><i className="ph-fill ph-check-circle text-6xl text-green-400 scale-in"></i></div>}
+                    {isSolved && <div className="absolute top-0 right-10 text-green-400 text-4xl"><i className="ph-fill ph-check-circle animate-bounce"></i></div>}
                 </div>
             );
 
             return (
                 <div className="flex w-full h-full relative">
-                    <DebugButton onClick={onComplete} />
-                    <div className="w-1/2 border-r border-white/10"><ScrambleBoard wordObj={data.p1Word} input={p1Input} setInput={setP1Input} isSolved={p1Solved} chars={p1Chars} label="PLAYER 1: 单词重组" /></div>
-                    <div className="w-1/2"><ScrambleBoard wordObj={data.p2Word} input={p2Input} setInput={setP2Input} isSolved={p2Solved} chars={p2Chars} label="PLAYER 2: 单词重组" /></div>
-                </div>
-            );
-        }
-
-        const GameWordConnect = ({ data, onComplete, hintSignal }) => {
-            const [selectedPath, setSelectedPath] = useState([]);
-            const [found, setFound] = useState(false);
-            const gridSize = 4;
-            const [grid, setGrid] = useState([]);
-
-            useEffect(() => {
-                const word = data.word;
-                const newGrid = new Array(gridSize * gridSize).fill('');
-                let finalGrid = [...newGrid];
-                for(let i=0; i<100; i++) {
-                    const r = Math.floor(Math.random() * gridSize);
-                    const c = Math.floor(Math.random() * gridSize);
-                    const dir = Math.random() > 0.5 ? 'h' : 'v'; 
-                    if(dir === 'h' && c + word.length <= gridSize) {
-                        for(let k=0; k<word.length; k++) finalGrid[r*gridSize + c + k] = word[k];
-                        break;
-                    }
-                    if(dir === 'v' && r + word.length <= gridSize) {
-                        for(let k=0; k<word.length; k++) finalGrid[(r+k)*gridSize + c] = word[k];
-                        break;
-                    }
-                }
-                for(let i=0; i<finalGrid.length; i++) {
-                    if(!finalGrid[i]) finalGrid[i] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
-                }
-                setGrid(finalGrid);
-            }, [data]);
-
-            const handleSelect = (idx) => {
-                if(found) return;
-                if(selectedPath.includes(idx)) setSelectedPath(prev => prev.filter(i => i !== idx));
-                else setSelectedPath(prev => [...prev, idx]);
-            };
-
-            useEffect(() => {
-                const currentWord = selectedPath.map(i => grid[i]).join("");
-                if(currentWord === data.word) {
-                    setFound(true);
-                    setTimeout(onComplete, 1000);
-                } else if (currentWord.length >= data.word.length) {
-                    setTimeout(() => setSelectedPath([]), 500);
-                }
-            }, [selectedPath, grid, data.word]);
-
-            useEffect(() => {
-                if(hintSignal > 0 && !found) {
-                    setFound(true);
-                    setTimeout(onComplete, 1000);
-                }
-            }, [hintSignal]);
-
-            return (
-                <div className="flex w-full h-full relative">
-                    <DebugButton onClick={onComplete} />
-                    <div className="w-full flex flex-col items-center justify-center">
-                        <div className="text-xl text-yellow-500 font-serif mb-2">{data.def}</div>
-                        <div className="text-slate-400 italic mb-4">{data.ex}</div>
-                        <div className="grid grid-cols-4 gap-2">
-                            {grid.map((char, i) => (
-                                <button key={i} 
-                                    onClick={() => handleSelect(i)}
-                                    className={`w-16 h-16 text-2xl font-bold rounded-lg transition-all ${selectedPath.includes(i) ? 'bg-yellow-500 text-black' : 'bg-slate-700 text-white'}`}
-                                >
-                                    {char}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="mt-8 text-2xl tracking-widest border-b border-slate-600 min-h-[2rem] text-white">
-                            {selectedPath.map(i => grid[i]).join("")}
-                        </div>
-                    </div>
+                    <GameInstruction text="各自还原乱序单词，双人同步完成" />
+                    <UndoButton onUndo={() => { setP1Input(p => p.slice(0, -1)); setP2Input(p => p.slice(0, -1)); }} disabled={p1Input.length === 0 && p2Input.length === 0} />
+                    <DebugButton onClick={debugSolve} />
+                    {debugSolved && <NextLevelButton onClick={onComplete} />}
+                    <div className="w-1/2 border-r border-white/10"><ScrambleBoard wordObj={data.p1Word} input={p1Input} setInput={setP1Input} isSolved={p1Solved} chars={p1Chars} label="PLAYER 1" /></div>
+                    <div className="w-1/2"><ScrambleBoard wordObj={data.p2Word} input={p2Input} setInput={setP2Input} isSolved={p2Solved} chars={p2Chars} label="PLAYER 2" /></div>
                 </div>
             );
         };
@@ -652,239 +478,126 @@
         const GameStarKnight = ({ levelId = 1, onComplete, hintSignal }) => {
             const levelData = CHESS_LEVELS.find(l => l.id === levelId) || CHESS_LEVELS[0];
             const [knightPos, setKnightPos] = useState({r:0, c:0});
+            const [history, setHistory] = useState([]);
             const [targetsLeft, setTargetsLeft] = useState(0);
-            const [gameStatus, setGameStatus] = useState("playing");
             const [activeGrid, setActiveGrid] = useState([]);
-            const [highlightMoves, setHighlightMoves] = useState(false);
+            const [trapMsg, setTrapMsg] = useState(null);
+            const [debugSolved, setDebugSolved] = useState(false);
+            const [highlightTargets, setHighlightTargets] = useState(false);
 
             useEffect(() => {
                 let start = {r:0, c:0};
                 let tCount = 0;
-                levelData.grid.forEach((row, r) => {
-                    row.forEach((cell, c) => {
-                        if(cell === 3) start = {r, c};
-                        if(cell === 1) tCount++;
-                    });
-                });
-                setKnightPos(start);
-                setTargetsLeft(tCount);
-                setActiveGrid(JSON.parse(JSON.stringify(levelData.grid)));
-                setGameStatus("playing");
+                levelData.grid.forEach((row, r) => row.forEach((cell, c) => { if(cell===3) start={r,c}; if(cell===1) tCount++; }));
+                setKnightPos(start); setHistory([]); setTargetsLeft(tCount); setActiveGrid(JSON.parse(JSON.stringify(levelData.grid)));
+                setDebugSolved(false);
             }, [levelData]);
 
             useEffect(() => {
                 if(hintSignal > 0) {
-                    setHighlightMoves(true);
-                    setTimeout(() => setHighlightMoves(false), 2000);
+                    setHighlightTargets(true);
+                    setTimeout(() => setHighlightTargets(false), 2000);
                 }
             }, [hintSignal]);
 
-            const isValidMove = (r1, c1, r2, c2) => {
-                const dr = Math.abs(r1 - r2);
-                const dc = Math.abs(c1 - c2);
-                return (dr === 2 && dc === 1) || (dr === 1 && dc === 2);
+            const debugSolve = () => {
+                setTargetsLeft(0);
+                setDebugSolved(true);
             };
 
             const handleMove = (r, c) => {
-                if (gameStatus !== "playing") return;
-                if (!isValidMove(knightPos.r, knightPos.c, r, c)) return;
+                if (trapMsg) return;
+                const dr = Math.abs(knightPos.r - r), dc = Math.abs(knightPos.c - c);
+                if (!((dr===2 && dc===1) || (dr===1 && dc===2))) return;
+                const cell = activeGrid[r][c];
+                if (cell === 4) return;
                 
-                const cellType = activeGrid[r][c];
-                if (cellType === 4) return; 
-
-                if (cellType === 2) {
-                    setGameStatus("lost");
-                     setTimeout(() => {
-                         let start = {r:0, c:0};
-                         levelData.grid.forEach((row, rr) => {
-                             row.forEach((cell, cc) => { if(cell === 3) start = {rr, cc}; });
-                         });
-                         setKnightPos(start);
-                         setActiveGrid(JSON.parse(JSON.stringify(levelData.grid)));
-                         setTargetsLeft(levelData.grid.flat().filter(x=>x===1).length);
-                         setGameStatus("playing");
-                     }, 1500);
-                    return;
-                }
-
-                setKnightPos({r, c});
-                if (cellType === 1) {
-                    const newGrid = [...activeGrid];
-                    newGrid[r][c] = 0; 
-                    setActiveGrid(newGrid);
-                    const newCount = targetsLeft - 1;
-                    setTargetsLeft(newCount);
-                    if (newCount === 0) {
-                        setGameStatus("won");
-                        setTimeout(onComplete, 1500);
+                setHistory(prev => [...prev, { pos: knightPos, grid: JSON.parse(JSON.stringify(activeGrid)), targets: targetsLeft }]);
+                
+                if (cell === 2) { 
+                    const ng = [...activeGrid]; ng[r][c] = 2; setActiveGrid(ng); setKnightPos({r,c}); setTrapMsg({r,c});
+                    setTimeout(() => {
+                        let s={r:0,c:0}, t=0;
+                        levelData.grid.forEach((rw,rr)=>rw.forEach((cl,cc)=>{if(cl===3)s={r:rr,c:cc};if(cl===1)t++;}));
+                        setKnightPos(s); setHistory([]); setTargetsLeft(t); setActiveGrid(JSON.parse(JSON.stringify(levelData.grid))); setTrapMsg(null);
+                    }, 1500);
+                } else {
+                    setKnightPos({r,c});
+                    if(cell===1) {
+                        const ng = [...activeGrid]; ng[r][c] = 0; setActiveGrid(ng);
+                        if(targetsLeft-1 === 0 && !debugSolved) onComplete();
+                        setTargetsLeft(t => t-1);
                     }
                 }
             };
 
-            const BoardView = () => (
-                <div className="flex flex-col items-center justify-center h-full z-10 relative">
-                     <h3 className="text-lg text-cyan-400 mb-6 font-bold tracking-widest font-sans-custom">
-                         {gameStatus === "lost" ? <span className="text-red-500">TRAP! RESETTING...</span> : "KNIGHT'S PATH"}
-                     </h3>
-                     <div className="grid gap-2 p-4 bg-slate-800/50 rounded-xl border border-white/10" 
-                          style={{gridTemplateColumns: `repeat(${levelData.size}, minmax(0, 1fr))`}}>
-                        {activeGrid.map((row, r) => row.map((cell, c) => {
-                            const isKnight = r === knightPos.r && c === knightPos.c;
-                            const isTarget = cell === 1;
-                            const isWall = cell === 4;
-                            const canMove = isValidMove(knightPos.r, knightPos.c, r, c);
-                            return (
-                                <div key={`${r}-${c}`} 
-                                    onClick={() => handleMove(r, c)}
-                                    className={`w-12 h-12 rounded-lg flex items-center justify-center text-xl transition-all duration-300 relative
-                                        ${isWall ? 'bg-slate-700 opacity-50' : 'bg-slate-700/30'}
-                                        ${canMove ? 'ring-2 ring-white/20 cursor-pointer hover:bg-white/10' : ''}
-                                        ${isKnight ? 'z-10' : ''}
-                                        ${(highlightMoves && canMove) ? 'bg-yellow-500/40 ring-2 ring-yellow-400' : ''}
-                                    `}>
-                                    {isKnight && <i className="ph-fill ph-horse text-cyan-400 text-2xl animate-bounce"></i>}
-                                    {isTarget && !isKnight && <i className="ph-fill ph-star text-yellow-400 text-lg animate-pulse"></i>}
-                                    {canMove && <div className="absolute w-2 h-2 bg-white/20 rounded-full"></div>}
-                                </div>
-                            );
-                        }))}
-                     </div>
-                     <div className="mt-4 text-sm text-slate-400 font-sans-custom">目标剩余: {targetsLeft}</div>
-                </div>
-            );
+            const handleUndo = () => {
+                if (history.length === 0) return;
+                const lastState = history[history.length - 1];
+                setKnightPos(lastState.pos);
+                setActiveGrid(lastState.grid);
+                setTargetsLeft(lastState.targets);
+                setHistory(prev => prev.slice(0, -1));
+            };
 
-            const RadarView = () => (
-                <div className="flex flex-col items-center justify-center h-full z-10 relative px-12 text-center">
-                    <h3 className="text-lg text-red-400 mb-6 font-bold tracking-widest font-sans-custom">RADAR</h3>
-                    <div className="grid gap-2 p-4 bg-red-900/10 rounded-xl border border-red-500/20" 
-                          style={{gridTemplateColumns: `repeat(${levelData.size}, minmax(0, 1fr))`}}>
-                        {activeGrid.map((row, r) => row.map((cell, c) => {
-                            const isTrap = cell === 2;
-                            const isKnight = r === knightPos.r && c === knightPos.c;
-                            return (
-                                <div key={`${r}-${c}`} 
-                                    className={`w-12 h-12 rounded-lg flex items-center justify-center text-lg
-                                        ${isTrap ? 'bg-red-500/20 border border-red-500/50' : 'bg-transparent border border-white/5'}
-                                    `}>
-                                    {isTrap && <i className="ph-fill ph-skull text-red-500"></i>}
-                                    {isKnight && <div className="w-2 h-2 bg-cyan-400 rounded-full animate-ping"></div>}
-                                </div>
-                            );
-                        }))}
-                    </div>
-                    <p className="mt-6 text-slate-300 text-sm font-sans-custom max-w-xs">指挥你的搭档避开骷髅陷阱，吃掉星星。</p>
-                </div>
-            );
-
-            return (
-                <div className="flex w-full h-full relative">
-                    <DebugButton onClick={() => onComplete()} />
-                    <div className="w-1/2 border-r border-white/10 relative">
-                        <BoardView />
-                        <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 font-sans-custom">PILOT</div>
-                    </div>
-                    <div className="w-1/2 relative">
-                        <RadarView />
-                        <div className="absolute top-4 right-4 text-xs font-bold text-slate-500 font-sans-custom">NAVIGATOR</div>
-                    </div>
-                </div>
-            );
-        };
-
-        const GameGomoku = ({ data, onComplete, hintSignal }) => {
-            const [cursorR, setCursorR] = useState(4);
-            const [cursorC, setCursorC] = useState(4);
-            const [gameStatus, setGameStatus] = useState("playing");
-            const [placed, setPlaced] = useState(false);
-
-            useEffect(() => {
-                if(hintSignal > 0 && !placed) {
-                    setCursorR(data.winSpot.r);
-                    setCursorC(data.winSpot.c);
-                }
-            }, [hintSignal]);
-
-            const handlePlace = () => {
-                if(placed || gameStatus !== "playing") return;
-                setPlaced(true);
-                
-                if (cursorR === data.winSpot.r && cursorC === data.winSpot.c || (data.winSpot2 && cursorR === data.winSpot2.r && cursorC === data.winSpot2.c)) {
-                    setGameStatus("won");
-                    setTimeout(onComplete, 1500);
-                } else {
-                    setGameStatus("lost");
-                    setTimeout(() => {
-                        setPlaced(false);
-                        setGameStatus("playing");
-                    }, 1000);
-                }
-            }
-
-            return (
-                <div className="flex w-full h-full relative z-10">
-                    <DebugButton onClick={() => onComplete()} />
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-[360px] h-[360px] bg-[#e2c792] shadow-2xl rounded-lg gomoku-grid relative border-2 border-[#8b5a2b]">
-                            {data.pieces.map((p, i) => (
-                                <div key={i} className="absolute w-8 h-8 rounded-full shadow-md transform -translate-x-1/2 -translate-y-1/2"
-                                     style={{
-                                         left: `${p.c * 35 + 20}px`, 
-                                         top: `${p.r * 35 + 20}px`,
-                                         backgroundColor: p.t === 1 ? '#111' : '#f0f0f0',
-                                         border: p.t === 2 ? '1px solid #ccc' : 'none'
-                                     }}
-                                ></div>
-                            ))}
-                            <div className={`absolute w-10 h-10 border-4 transition-all duration-200 transform -translate-x-1/2 -translate-y-1/2
-                                ${gameStatus === 'won' ? 'border-green-500 scale-125' : (gameStatus === 'lost' ? 'border-red-500' : 'border-blue-500 animate-pulse')}
-                            `}
-                            style={{left: `${cursorC * 35 + 20}px`, top: `${cursorR * 35 + 20}px`}}
-                            >
-                                {placed && (
-                                    <div className="w-full h-full rounded-full bg-black"></div>
-                                )}
-                            </div>
+            // Use .radar-board class for correct styling
+            const RadarBoard = () => (
+                <div className="radar-board" style={{gridTemplateColumns: `repeat(${levelData.size}, 1fr)`}}>
+                    {activeGrid.map((row, r) => row.map((cell, c) => {
+                        const isK = r===knightPos.r && c===knightPos.c;
+                        return <div key={`${r}-${c}`} className={`w-10 h-10 rounded flex items-center justify-center relative radar-cell`}>
+                            {isK && <div className="w-3 h-3 bg-yellow-300 rounded-full my-piece-dot"></div>}
+                            {cell===2 && <i className="ph-fill ph-skull text-red-500 text-xl skull-jump"></i>}
                         </div>
-                    </div>
-
-                    <div className="w-1/2 border-r border-white/10 relative flex flex-col justify-center items-start pl-8">
-                        <div className="text-blue-300 font-bold mb-4 font-sans-custom">P1: 调整 行 (Row)</div>
-                        <div className="flex flex-col gap-4">
-                            <button onClick={() => setCursorR(Math.max(0, cursorR - 1))} className="p-4 bg-slate-700 rounded-full active:bg-slate-600"><i className="ph-bold ph-arrow-up text-2xl"></i></button>
-                            <button onClick={() => setCursorR(Math.min(9, cursorR + 1))} className="p-4 bg-slate-700 rounded-full active:bg-slate-600"><i className="ph-bold ph-arrow-down text-2xl"></i></button>
-                        </div>
-                    </div>
-
-                    <div className="w-1/2 relative flex flex-col justify-center items-end pr-8">
-                        <div className="text-blue-300 font-bold mb-4 font-sans-custom">P2: 调整 列 (Col)</div>
-                        <div className="flex flex-col gap-4 items-end">
-                            <div className="flex gap-4">
-                                <button onClick={() => setCursorC(Math.max(0, cursorC - 1))} className="p-4 bg-slate-700 rounded-full active:bg-slate-600"><i className="ph-bold ph-arrow-left text-2xl"></i></button>
-                                <button onClick={() => setCursorC(Math.min(9, cursorC + 1))} className="p-4 bg-slate-700 rounded-full active:bg-slate-600"><i className="ph-bold ph-arrow-right text-2xl"></i></button>
-                            </div>
-                            <button onClick={handlePlace} className="mt-8 px-8 py-4 bg-green-600 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all">
-                                确认落子 (PLACE)
-                            </button>
-                        </div>
-                    </div>
+                    }))}
                 </div>
             );
+
+            const PilotBoard = () => (
+                <div className="grid gap-1 bg-slate-800 p-2 rounded" style={{gridTemplateColumns: `repeat(${levelData.size}, 1fr)`}}>
+                    {activeGrid.map((row, r) => row.map((cell, c) => {
+                        const isK = r===knightPos.r && c===knightPos.c;
+                        const isT = trapMsg && trapMsg.r===r && trapMsg.c===c;
+                        const isStar = cell === 1;
+                        return <div key={`${r}-${c}`} onClick={()=>handleMove(r,c)} className={`w-10 h-10 rounded flex items-center justify-center relative cursor-pointer active:scale-90 transition-transform ${cell===4?'bg-slate-600':'bg-slate-700/50'} ${highlightTargets && isStar ? 'ring-2 ring-yellow-400' : ''}`}>
+                            {isK && <i className="ph-fill ph-horse text-cyan-400 text-xl"></i>}
+                            {isStar && !isK && <i className={`ph-fill ph-star text-yellow-400 text-sm ${highlightTargets ? 'animate-bounce' : ''}`}></i>}
+                            {isT && <i className="ph-fill ph-skull text-white text-xl animate-bounce"></i>}
+                        </div>
+                    }))}
+                </div>
+            );
+
+            return <div className="flex w-full h-full relative">
+                <GameInstruction text="骑士走日字 • 躲避陷阱 • 收集星星" />
+                <UndoButton onUndo={handleUndo} disabled={history.length === 0} />
+                <DebugButton onClick={debugSolve} />
+                {debugSolved && <NextLevelButton onClick={onComplete} />}
+                <div className="w-1/2 border-r border-white/10 flex flex-col items-center justify-center"><div className="text-xs text-slate-500 mb-2">PILOT (星星)</div><PilotBoard /></div>
+                <div className="w-1/2 flex flex-col items-center justify-center"><div className="text-xs text-red-400 mb-2">RADAR (陷阱)</div><RadarBoard /></div>
+            </div>;
         };
 
         const GameSudoku = ({ data, onComplete, hintSignal }) => {
+            if(!data) return null;
             const [grid, setGrid] = useState([]);
             const [selectedCell, setSelectedCell] = useState(null); 
+            const [debugSolved, setDebugSolved] = useState(false);
             
-            useEffect(() => {
-                setGrid(JSON.parse(JSON.stringify(data.initial)));
-            }, [data]);
+            useEffect(() => { setGrid(JSON.parse(JSON.stringify(data.initial))); setDebugSolved(false); }, [data]);
 
+            const debugSolve = () => {
+                setGrid(data.solution);
+                setDebugSolved(true);
+            };
+
+            // Fix hint logic: fill ONE cell
             useEffect(() => {
                 if(hintSignal > 0) {
                     for(let r=0; r<4; r++) {
                         for(let c=0; c<4; c++) {
                             if(grid[r][c] === 0) {
-                                const newGrid = [...grid];
+                                const newGrid = [...grid.map(row=>[...row])];
                                 newGrid[r][c] = data.solution[r][c];
                                 setGrid(newGrid);
                                 return;
@@ -896,17 +609,9 @@
 
             useEffect(() => {
                 if(grid.length > 0) {
-                    let full = true;
-                    let correct = true;
-                    for(let r=0; r<4; r++){
-                        for(let c=0; c<4; c++){
-                            if(grid[r][c] === 0) full = false;
-                            if(grid[r][c] !== 0 && grid[r][c] !== data.solution[r][c]) correct = false;
-                        }
-                    }
-                    if(full && correct) {
-                        setTimeout(onComplete, 1000);
-                    }
+                    let full = true, correct = true;
+                    for(let r=0; r<4; r++) for(let c=0; c<4; c++) { if(grid[r][c] === 0) full = false; else if(grid[r][c] !== data.solution[r][c]) correct = false; }
+                    if(full && correct && !debugSolved) onComplete();
                 }
             }, [grid]);
 
@@ -914,7 +619,6 @@
                 if(!selectedCell) return;
                 const {r, c} = selectedCell;
                 if(data.initial[r][c] !== 0) return;
-
                 const newGrid = [...grid];
                 newGrid[r][c] = num;
                 setGrid(newGrid);
@@ -922,266 +626,102 @@
 
             return (
                 <div className="flex w-full h-full relative z-10">
-                    <DebugButton onClick={() => onComplete()} />
+                    <GameInstruction text="P1选格子，P2填数字，共同完成4x4数独" />
+                    <UndoButton onUndo={() => { if(selectedCell) handleNumberInput(0); }} disabled={!selectedCell} />
+                    <DebugButton onClick={debugSolve} />
+                    {debugSolved && <NextLevelButton onClick={onComplete} />}
                     <div className="w-1/2 border-r border-white/10 flex flex-col items-center justify-center relative">
-                        <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 font-sans-custom">P1: 选择格子</div>
                         <div className="grid grid-cols-4 gap-2 bg-slate-800 p-4 rounded-xl shadow-xl">
-                            {grid.map((row, r) => row.map((val, c) => {
-                                const isFixed = data.initial[r][c] !== 0;
-                                const isSelected = selectedCell?.r === r && selectedCell?.c === c;
-                                const isWrong = val !== 0 && val !== data.solution[r][c];
-                                return (
-                                    <div key={`${r}-${c}`}
-                                        onClick={() => !isFixed && setSelectedCell({r, c})}
-                                        className={`w-14 h-14 flex items-center justify-center text-2xl font-bold rounded cursor-pointer transition-all
-                                            ${isFixed ? 'bg-slate-700 text-slate-400' : 'bg-slate-600 text-white hover:bg-slate-500'}
-                                            ${isSelected ? 'ring-4 ring-yellow-400 z-10' : ''}
-                                            ${isWrong ? 'text-red-400' : ''}
-                                        `}
-                                    >
-                                        {val !== 0 ? val : ''}
-                                    </div>
-                                );
-                            }))}
+                            {grid.map((row, r) => row.map((val, c) => (
+                                <div key={`${r}-${c}`} onClick={() => data.initial[r][c] === 0 && setSelectedCell({r, c})}
+                                    className={`w-14 h-14 flex items-center justify-center text-2xl font-bold rounded cursor-pointer transition-all ${data.initial[r][c] !== 0 ? 'bg-slate-700 text-slate-400' : 'bg-slate-600 text-white'} ${selectedCell?.r === r && selectedCell?.c === c ? 'ring-4 ring-yellow-400 z-10' : ''} ${val !== 0 && val !== data.solution[r][c] ? 'text-red-400' : ''}`}>
+                                    {val !== 0 ? val : ''}
+                                </div>
+                            )))}
                         </div>
                     </div>
-
                     <div className="w-1/2 flex flex-col items-center justify-center relative">
-                        <div className="absolute top-4 right-4 text-xs font-bold text-slate-500 font-sans-custom">P2: 填入数字</div>
                         <div className="grid grid-cols-2 gap-4">
-                            {[1, 2, 3, 4].map(num => (
-                                <button key={num}
-                                    onClick={() => handleNumberInput(num)}
-                                    className="w-20 h-20 bg-blue-600 rounded-xl text-3xl font-bold shadow-lg active:bg-blue-500 active:scale-95 transition-all"
-                                >
-                                    {num}
-                                </button>
-                            ))}
-                            <button onClick={() => handleNumberInput(0)} className="col-span-2 h-12 bg-red-900/50 rounded-lg text-red-300 font-sans-custom">清除</button>
+                            {[1, 2, 3, 4].map(num => <button key={num} onClick={() => handleNumberInput(num)} className="w-20 h-20 bg-blue-600 rounded-xl text-3xl font-bold shadow-lg active:scale-95">{num}</button>)}
+                            <button onClick={() => handleNumberInput(0)} className="col-span-2 h-12 bg-red-900/50 rounded-lg text-red-300">清除</button>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        const GameMeteorCatch = ({ onComplete }) => {
-            const [targets, setTargets] = useState([]); 
-            const [score, setScore] = useState(0);
-            const [timeLeft, setTimeLeft] = useState(20);
-            const [gameActive, setGameActive] = useState(false);
-            const targetIdCounter = useRef(0);
-
-            useEffect(() => {
-                setGameActive(true);
-                const timer = setInterval(() => {
-                    setTimeLeft(t => {
-                        if (t <= 1) {
-                            clearInterval(timer);
-                            setGameActive(false);
-                            return 0;
-                        }
-                        return t - 1;
-                    });
-                }, 1000);
-                return () => clearInterval(timer);
-            }, []);
-
-            useEffect(() => {
-                if (!gameActive) return;
-                
-                const spawnInterval = setInterval(() => {
-                    if (targets.length < 6) {
-                        const id = targetIdCounter.current++;
-                        const isP1 = Math.random() > 0.5;
-                        const x = Math.random() * 80 + 10;
-                        const y = Math.random() * 80 + 10;
-                        
-                        setTargets(prev => [...prev, { id, isP1, x, y, active: true }]);
-                        setTimeout(() => {
-                            setTargets(prev => prev.filter(t => t.id !== id));
-                        }, 2000);
-                    }
-                }, 800);
-
-                return () => clearInterval(spawnInterval);
-            }, [gameActive, targets.length]);
-
-            useEffect(() => {
-                if (score >= 15) { 
-                    setGameActive(false);
-                    setTimeout(onComplete, 1000);
-                } else if (timeLeft === 0 && score < 15) {
-                    setTimeout(() => {
-                        setScore(0);
-                        setTimeLeft(20);
-                        setTargets([]);
-                        setGameActive(true);
-                    }, 1500);
-                }
-            }, [score, timeLeft]);
-
-            const handleTap = (id) => {
-                if (!gameActive) return;
-                setTargets(prev => prev.filter(t => t.id !== id));
-                setScore(s => s + 1);
-            };
-
-            return (
-                <div className="flex w-full h-full relative z-10 overflow-hidden">
-                    <DebugButton onClick={onComplete} />
-                    
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none text-center">
-                        {gameActive ? (
-                            <>
-                                <div className="text-6xl font-bold text-yellow-400 font-sans-custom mb-2">{score}/15</div>
-                                <div className="text-xl text-slate-400">时间: {timeLeft}s</div>
-                            </>
-                        ) : (
-                            score >= 15 ? 
-                            <div className="text-5xl font-bold text-green-400 font-proposal-en animate-bounce">Perfect!</div> :
-                            <div className="text-4xl text-red-400 font-sans-custom">Try Again!</div>
-                        )}
-                    </div>
-
-                    <div className="w-1/2 border-r border-white/10 relative">
-                        <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 font-sans-custom">P1: 抓住流星!</div>
-                        {targets.filter(t => t.isP1).map(t => (
-                            <button
-                                key={t.id}
-                                className="absolute w-16 h-16 rounded-full bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.8)] scale-in active:scale-90 transition-transform flex items-center justify-center"
-                                style={{ left: `${t.x}%`, top: `${t.y}%` }}
-                                onTouchStart={() => handleTap(t.id)}
-                                onMouseDown={() => handleTap(t.id)}
-                            >
-                                <i className="ph-fill ph-star text-white text-2xl"></i>
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="w-1/2 relative">
-                        <div className="absolute top-4 right-4 text-xs font-bold text-slate-500 font-sans-custom">P2: 抓住流星!</div>
-                        {targets.filter(t => !t.isP1).map(t => (
-                            <button
-                                key={t.id}
-                                className="absolute w-16 h-16 rounded-full bg-pink-500 shadow-[0_0_20px_rgba(236,72,153,0.8)] scale-in active:scale-90 transition-transform flex items-center justify-center"
-                                style={{ left: `${t.x}%`, top: `${t.y}%` }}
-                                onTouchStart={() => handleTap(t.id)}
-                                onMouseDown={() => handleTap(t.id)}
-                            >
-                                <i className="ph-fill ph-star text-white text-2xl"></i>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        // --- 结局页面 ---
         const ProposalScreen = ({ onReplay }) => {
             const [stage, setStage] = useState(0); 
             const [ringFly, setRingFly] = useState(false);
+            const [showModal, setShowModal] = useState(false);
 
             useEffect(() => {
-                // 0: Moon Centered
-                // 1: Moon slides to left directly
                 setTimeout(() => setStage(1), 1000); 
-                // 2: Moon transforms to Ring on left
-                setTimeout(() => setStage(2), 3000);
-                // 3: Question appears
-                setTimeout(() => setStage(3), 6000);
+                setTimeout(() => setStage(2), 2500); 
+                setTimeout(() => setStage(3), 3500); 
             }, []);
 
             const handleYes = () => {
                 setRingFly(true);
+                setTimeout(() => setShowModal(true), 1500);
             };
 
             return (
                 <div className="absolute inset-0 bg-black z-50 flex overflow-hidden">
                     <StarBackground />
                     
-                    {/* Left Panel: Moon -> Ring */}
-                    <div className="w-1/2 h-full flex items-center justify-center relative">
-                        <div className={`transition-all duration-[1500ms] ease-in-out transform ${stage >= 1 ? 'translate-x-0 scale-100' : 'translate-x-[50vw] scale-150'}`}>
-                            {/* Moon fades out, Ring fades in */}
-                            <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-[2000ms] ${stage >= 2 ? 'opacity-0' : 'opacity-100'}`}>
-                                <MoonDisplay progress={1} isFull={true} isRing={false} />
-                            </div>
-                            <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-[2000ms] ${stage >= 2 ? 'opacity-100' : 'opacity-0'} ${ringFly ? 'animate-ring-fly' : ''}`}>
-                                <MoonDisplay progress={1} isFull={true} isRing={true} />
-                            </div>
+                    <div className={`absolute w-full h-full flex items-center justify-center transition-transform duration-[1500ms] ease-in-out ${stage >= 1 ? '-translate-x-[25vw]' : ''}`}>
+                        <div className={`relative ${ringFly ? 'animate-ring-fly' : ''}`}>
+                            <MoonDisplay progress={1} isFull={true} isRing={false} stage={stage} />
                         </div>
                     </div>
 
-                    {/* Right Panel: Text & Question */}
-                    <div className="w-1/2 h-full flex flex-col justify-center px-12 relative">
-                        <h1 className={`text-5xl font-proposal-cn text-yellow-50 mb-8 transition-opacity duration-1000 ${stage >= 1 ? 'opacity-100' : 'opacity-0'}`}>
-                            {PROPOSAL_TEXT.title}
-                        </h1>
-                        
+                    <div className={`absolute right-0 top-0 w-1/2 h-full flex flex-col justify-center px-16 transition-opacity duration-1000 ${stage >= 3 ? 'opacity-100' : 'opacity-0'}`}>
+                        <h1 className="text-5xl font-proposal-cn text-yellow-50 mb-8">{PROPOSAL_TEXT.title}</h1>
                         <div className="space-y-4 mb-12">
                             {PROPOSAL_TEXT.lines.map((line, i) => (
-                                <div key={i} className={`text-2xl text-slate-200 font-proposal-cn transition-all duration-1000`} 
-                                     style={{opacity: stage >= 1 ? 1 : 0, transitionDelay: `${i * 800}ms`, transform: stage >= 1 ? 'translateY(0)' : 'translateY(20px)'}}>
-                                    {line}
-                                </div>
+                                <div key={i} className="text-2xl text-slate-200 font-proposal-cn" style={{animation: stage >= 3 ? `fadeIn 1s ease-out ${i*0.5}s both` : 'none'}}>{line}</div>
                             ))}
                         </div>
+                        <h2 className="text-4xl font-bold text-white mb-8 font-proposal-cn">{PROPOSAL_TEXT.question}</h2>
+                        <button onClick={handleYes} className="px-12 py-4 bg-yellow-500 hover:bg-yellow-400 text-yellow-950 rounded-full text-2xl font-bold shadow-lg active:scale-95 transition-all font-proposal-en w-fit">YES, I DO</button>
+                    </div>
 
-                        <div className={`transition-all duration-1000 ${stage >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                             <h2 className="text-4xl font-bold text-white mb-8 font-proposal-cn">
-                                {PROPOSAL_TEXT.question}
-                            </h2>
-                            <div className="flex flex-col gap-4 items-center relative">
-                                <button onClick={handleYes} className="px-12 py-4 bg-yellow-500 hover:bg-yellow-400 text-yellow-950 rounded-full text-2xl font-bold shadow-[0_0_40px_rgba(234,179,8,0.5)] active:scale-95 transition-all font-proposal-en relative z-10 w-fit">
-                                    YES, I DO
-                                </button>
-                                <button onClick={onReplay} className="text-slate-500 hover:text-white text-sm border-b border-transparent hover:border-white transition-all font-sans-custom mt-2">
-                                    返回主页 (Replay)
-                                </button>
+                    {showModal && (
+                        <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 animate-fade-in">
+                            <div className="bg-slate-900/90 p-12 rounded-3xl border border-yellow-500/50 flex flex-col items-center shadow-[0_0_50px_rgba(234,179,8,0.3)]">
+                                <div className="w-48 h-48 mb-8 animate-bounce"><MoonDisplay progress={1} isFull={true} isRing={false} stage={3} /></div>
+                                <h2 className="text-4xl text-yellow-400 font-proposal-cn mb-8">我也爱你!</h2>
+                                <button onClick={onReplay} className="text-slate-400 hover:text-white border-b border-transparent hover:border-white transition-all">返回主页</button>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             );
         };
 
         const App = () => {
             const [gameStage, setGameStage] = useState("menu"); 
-            const [chapterIndex, setChapterIndex] = useState(0);
-            const [gameIndexInChapter, setGameIndexInChapter] = useState(0);
-            const [moonProgress, setMoonProgress] = useState(0);
-            
-            // Hint System State
+            const [levelData, setLevelData] = useState([]);
+            const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
+            const [collectedFragments, setCollectedFragments] = useState(0);
             const [hintSignal, setHintSignal] = useState(0);
             const [hintsRemaining, setHintsRemaining] = useState(3);
             const [showHintGame, setShowHintGame] = useState(false);
+            const [showSuccess, setShowSuccess] = useState(false);
+            const [showFragment, setShowFragment] = useState(false);
             
-            const chapters = useMemo(() => {
-                if (gameStage === "menu") return generateGameStructure();
-                return null;
-            }, [gameStage === "menu"]);
-
-            const [activeChapters, setActiveChapters] = useState([]);
-            useEffect(() => {
-                if(chapters) setActiveChapters(chapters);
-            }, [chapters]);
-
-            const startGame = () => {
-                setChapterIndex(0);
-                setGameIndexInChapter(0);
-                setMoonProgress(0);
-                setHintsRemaining(3); 
+            const startNewGame = () => {
+                const levels = generateLevelSequence();
+                setLevelData(levels);
+                setCurrentLevelIndex(0);
+                setCollectedFragments(0);
+                setHintsRemaining(3);
                 setGameStage("playing");
             };
 
             const triggerHint = () => {
-                if(hintsRemaining > 0) {
-                    setHintSignal(s => s + 1);
-                    setHintsRemaining(h => h - 1);
-                } else {
-                    // Start Hint Refill Game
-                    setShowHintGame(true);
-                }
+                if(hintsRemaining > 0) { setHintSignal(s => s + 1); setHintsRemaining(h => h - 1); } else { setShowHintGame(true); }
             };
 
             const handleHintGameComplete = (earned) => {
@@ -1190,121 +730,96 @@
             };
 
             const handleGameComplete = () => {
-                const currentChapter = activeChapters[chapterIndex];
+                setShowSuccess(true);
+                setHintSignal(0);
                 
-                // Reset hints per game (User requirement: Default 3 per game)
-                setHintsRemaining(3);
-
-                if (gameIndexInChapter + 1 < currentChapter.games.length) {
-                    setGameIndexInChapter(prev => prev + 1);
-                } else {
-                    setGameStage("chapter_complete");
-                    const nextChapterIdx = chapterIndex + 1;
-                    const totalChapters = activeChapters.length;
-                    const newProgress = nextChapterIdx / totalChapters;
-                    setMoonProgress(newProgress);
-
-                    setTimeout(() => {
-                        if (nextChapterIdx < totalChapters) {
-                            setChapterIndex(nextChapterIdx);
-                            setGameIndexInChapter(0);
-                            setGameStage("playing");
-                        } else {
-                            setGameStage("ending");
-                        }
-                    }, 3500);
+                const currentLevel = levelData[currentLevelIndex];
+                if (currentLevel.hasFragment) {
+                    setCollectedFragments(prev => Math.min(5, prev + 1));
+                    setShowFragment(true);
+                    setTimeout(() => setShowFragment(false), 2000);
                 }
+
+                setTimeout(() => {
+                    setShowSuccess(false);
+                    setHintsRemaining(3); 
+                    
+                    if (currentLevelIndex + 1 < levelData.length) {
+                        setCurrentLevelIndex(prev => prev + 1);
+                    } else {
+                        setGameStage("ending");
+                    }
+                }, 1500);
             };
 
             const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
+            const [devBypass, setDevBypass] = useState(false);
             useEffect(() => {
                 const check = () => setIsLandscape(window.innerWidth > window.innerHeight);
                 window.addEventListener('resize', check);
                 return () => window.removeEventListener('resize', check);
             }, []);
 
-            if (!isLandscape) {
+            if (!isLandscape && !devBypass) {
                 return (
                     <div className="w-screen h-screen bg-black flex flex-col items-center justify-center text-white p-8 text-center font-sans-custom">
                         <i className="ph ph-device-rotate text-6xl mb-4 animate-spin-slow"></i>
-                        <h2 className="text-xl">请旋转 iPad 至横屏模式</h2>
+                        <h2 className="text-xl mb-8">请旋转 iPad 至横屏模式</h2>
+                        <button onClick={() => setDevBypass(true)} className="px-4 py-2 border border-white/20 text-xs rounded opacity-50 hover:opacity-100">我是电脑 (强制进入)</button>
                     </div>
                 );
             }
 
-            const currentChapter = activeChapters[chapterIndex];
-            const currentGame = currentChapter ? currentChapter.games[gameIndexInChapter] : null;
+            const currentLevel = levelData[currentLevelIndex];
 
             return (
                 <div className="w-screen h-screen flex flex-col overflow-hidden relative">
                     <StarBackground />
-
-                    {/* 顶部状态栏 - 压缩高度 (h-10 / 2.5rem) */}
-                    <div className="border-b border-white/5 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur z-20 shrink-0" 
-                         style={{height: 'calc(2.5rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)'}}>
+                    <div className="border-b border-white/5 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur z-20 shrink-0 box-content" style={{height: '2.5rem', paddingTop: 'env(safe-area-inset-top)'}}>
                         <div className="text-slate-400 text-xs font-bold tracking-widest font-sans-custom">MOONLIGHT MOSAIC</div>
-                        
-                        <div className="absolute left-1/2 transform -translate-x-1/2 pt-[env(safe-area-inset-top)]">
-                            {gameStage === 'playing' && (
-                                <HintButton hints={hintsRemaining} onHint={triggerHint} />
-                            )}
+                        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-4" style={{top: 'calc(env(safe-area-inset-top) + 0.2rem)'}}>
+                            <div className="flex gap-1">
+                                {[...Array(5)].map((_, i) => (
+                                    <div key={i} className={`w-4 h-4 rounded-full ${i < collectedFragments ? 'bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]' : 'bg-slate-700 border border-slate-600'}`}></div>
+                                ))}
+                            </div>
+                            {gameStage === 'playing' && <HintButton hints={hintsRemaining} onHint={triggerHint} />}
                         </div>
-
                         <div className="flex gap-4 items-center">
-                            {currentChapter && (
-                                <div className="text-slate-300 text-[10px] font-sans-custom px-2 py-0.5 bg-white/5 rounded">
-                                    {currentChapter.title} - {gameIndexInChapter + 1}/{currentChapter.games.length}
-                                </div>
-                            )}
+                            {currentLevel && <div className="text-slate-300 text-[10px] font-sans-custom px-2 py-0.5 bg-white/5 rounded">Level {currentLevelIndex + 1}/{levelData.length}</div>}
                         </div>
                     </div>
 
                     <div className="flex-1 relative w-full h-full overflow-hidden">
                         {gameStage === "menu" && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center z-50">
-                                <MoonDisplay progress={0} isFull={false} isRing={false} />
+                                <MoonDisplay progress={0} isFull={false} isRing={false} stage={0} />
                                 <h1 className="text-7xl text-yellow-400 mt-8 mb-4 tracking-tighter font-serif font-bold drop-shadow-[0_0_15px_rgba(250,204,21,0.3)]">Moonlight Mosaic</h1>
                                 <p className="text-slate-300 mb-12 text-xl font-proposal-cn tracking-widest">双人 · 协作 · 永恒</p>
-                                <button onClick={startGame}
-                                    className="px-12 py-4 border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 rounded-full hover:bg-yellow-500/20 hover:border-yellow-400 transition-all text-xl tracking-widest font-sans-custom backdrop-blur-sm">
-                                    START GAME
-                                </button>
-                                <div className="mt-8 text-xs text-slate-500 font-sans-custom flex flex-col items-center gap-1">
-                                    <span>提示: 如无法隐藏地址栏，请将此页面部署至 Github Pages 等服务器后再添加到主屏幕</span>
-                                </div>
+                                <button onClick={startNewGame} className="px-12 py-4 border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 rounded-full hover:bg-yellow-500/20 hover:border-yellow-400 transition-all text-xl tracking-widest font-sans-custom backdrop-blur-sm">START GAME</button>
                             </div>
                         )}
 
                         {gameStage === "chapter_complete" && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center z-40 bg-slate-900/60 backdrop-blur-md transition-all duration-500">
-                                <div className="text-4xl text-yellow-300 mb-4 font-proposal-en animate-bounce font-bold">
-                                    Chapter Complete
-                                </div>
-                                <div className="text-xl text-slate-300 mb-12 font-proposal-cn tracking-widest">
-                                    {chapterIndex + 1 === activeChapters.length ? "月光已圆满" : "收集到一片月光..."}
-                                </div>
-                                <div className="shard-animate">
-                                    <MoonDisplay progress={moonProgress} isFull={moonProgress >= 0.99} isRing={false} />
-                                </div>
+                                <div className="text-4xl text-yellow-300 mb-4 font-proposal-en animate-bounce font-bold">Chapter Complete</div>
+                                <div className="shard-animate"><MoonDisplay progress={moonProgress} isFull={moonProgress >= 0.99} isRing={false} stage={0} /></div>
                             </div>
                         )}
 
-                        {gameStage === "playing" && currentGame && (
+                        {gameStage === "playing" && currentLevel && (
                             <div className="w-full h-full relative">
+                                {showSuccess && <SuccessOverlay />}
+                                {showFragment && <FragmentNotification />}
                                 {showHintGame && <HintRefillGame onComplete={handleHintGameComplete} />}
-                                {currentGame.type === 'word' && <GameWordPuzzle key={`w-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
-                                {currentGame.type === 'scramble' && <GameScramble key={`sc-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
-                                {currentGame.type === 'connect' && <GameWordConnect key={`wc-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
-                                {currentGame.type === 'knight' && <GameStarKnight key={`k-${chapterIndex}-${gameIndexInChapter}`} levelId={currentGame.data.id} onComplete={handleGameComplete} hintSignal={hintSignal} />}
-                                {currentGame.type === 'meteor' && <GameMeteorCatch key={`m-${chapterIndex}-${gameIndexInChapter}`} onComplete={handleGameComplete} />}
-                                {currentGame.type === 'gomoku' && <GameGomoku key={`g-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
-                                {currentGame.type === 'sudoku' && <GameSudoku key={`sd-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
+                                {currentLevel.type === 'word' && <GameWordPuzzle key={`lvl-${currentLevelIndex}`} data={currentLevel.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
+                                {currentLevel.type === 'scramble' && <GameScramble key={`lvl-${currentLevelIndex}`} data={currentLevel.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
+                                {currentLevel.type === 'knight' && <GameStarKnight key={`lvl-${currentLevelIndex}`} levelId={currentLevel.data.id} onComplete={handleGameComplete} hintSignal={hintSignal} />}
+                                {currentLevel.type === 'sudoku' && <GameSudoku key={`lvl-${currentLevelIndex}`} data={currentLevel.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
                             </div>
                         )}
 
-                        {gameStage === "ending" && (
-                            <ProposalScreen onReplay={() => setGameStage("menu")} />
-                        )}
+                        {gameStage === "ending" && <ProposalScreen onReplay={() => setGameStage("menu")} />}
                     </div>
                 </div>
             );
