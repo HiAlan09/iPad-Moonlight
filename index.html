@@ -15,7 +15,7 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
     <style>
-        /* 禁止默认的触摸行为，防止双击缩放等干扰游戏 */
+        /* --- 基础设置 --- */
         body {
             touch-action: none;
             user-select: none;
@@ -23,21 +23,53 @@
             overflow: hidden;
             background-color: #0f172a; /* Slate 900 */
             color: #f8fafc;
+            font-family: 'Times New Roman', serif; /* 默认衬线体，更有质感 */
+        }
+        
+        /* --- 字体定制 --- */
+        .font-sans-custom {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
-        
-        /* 定制求婚字体 */
-        .font-proposal {
-            font-family: "Times New Roman", "KaiTi", "STKaiti", "BiauKai", serif;
+        .font-proposal-cn {
+            font-family: "KaiTi", "STKaiti", "BiauKai", "楷体", serif;
+        }
+        .font-proposal-en {
+            font-family: "Times New Roman", serif;
         }
 
-        /* 自定义月亮光晕动画 */
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 20px 5px rgba(253, 224, 71, 0.3); }
-            50% { box-shadow: 0 0 40px 10px rgba(253, 224, 71, 0.6); }
-        }
+        /* --- 动画特效 --- */
         
-        .moon-glow {
+        /* 星空背景动画 */
+        .stars, .twinkling {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%;
+            display: block;
+        }
+        .stars {
+            background: #000 url('https://raw.githubusercontent.com/hyshin/star-background/master/stars.png') repeat top center;
+            z-index: 0;
+        }
+        .twinkling {
+            background: transparent url('https://raw.githubusercontent.com/hyshin/star-background/master/twinkling.png') repeat top center;
+            z-index: 1;
+            animation: move-twink-back 200s linear infinite;
+            opacity: 0.6;
+        }
+        @keyframes move-twink-back {
+            from {background-position:0 0;}
+            to {background-position:-10000px 5000px;}
+        }
+
+        /* 月亮光晕 - 修复边缘裁剪问题 */
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 15px rgba(253, 224, 71, 0.4)); }
+            50% { filter: drop-shadow(0 0 35px rgba(253, 224, 71, 0.8)); }
+        }
+        .moon-container svg {
+            overflow: visible; /* 关键：允许光晕溢出SVG边界 */
+        }
+        .moon-glow circle {
             animation: pulse-glow 4s infinite ease-in-out;
         }
 
@@ -50,12 +82,13 @@
             animation: fly-in 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         
-        /* 简单的闪烁动画 */
-        .blink {
-            animation: blinker 1s linear infinite;
+        /* 呼吸效果 */
+        .animate-breathe {
+            animation: breathe 3s ease-in-out infinite;
         }
-        @keyframes blinker {
-            50% { opacity: 0.5; }
+        @keyframes breathe {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
         }
     </style>
 </head>
@@ -63,125 +96,153 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useMemo } = React;
 
-        // --- 游戏数据与配置 ---
+        // --- 游戏内容数据库 ---
         
-        // 求婚誓词配置
         const PROPOSAL_TEXT = {
             title: "亲爱的",
-            body: "和你一起度过的每一关，都是我生命中最美好的时光。\n\n我们在游戏中配合默契，在生活中相互扶持。\n\n这轮圆满的月亮，代表我对你圆满的爱。",
+            // 使用 \n 进行换行
+            body: "和你一起度过的每一关，\n都是我生命中最美好的时光。\n\n我们在游戏中配合默契，\n在生活中相互扶持。\n\n这轮圆满的月亮，\n代表我对你圆满的爱。",
             question: "你愿意嫁给我吗？"
         };
 
-        // 升级版单词库 (TOEFL / 高级词汇)
-        // logic: 'controller' 决定每一轮谁拿键盘 (1=左边玩家, 2=右边玩家)
-        const WORD_PUZZLES = [
-            { 
-                word: "SERENDIPITY", 
-                hintPattern: [true, false, true, false, true, false, true, false, true, false, true], // true显示, false隐藏
-                options: ["S", "E", "R", "N", "D", "I", "P", "T", "Y", "A"], 
-                definition: "【名】机缘巧合，意外发现珍宝的运气",
-                example: "It was pure ______ that we met at the coffee shop that day.",
-                startPlayer: 2 // 第一关右边操作键盘
-            },
-            { 
-                word: "CHERISH", 
-                hintPattern: [false, true, false, true, false, true, false], 
-                options: ["C", "H", "E", "R", "I", "S", "A", "T"], 
-                definition: "【动】珍爱，爱护 (to protect and care for lovingly)",
-                example: "I will ______ every moment we spend together.",
-                startPlayer: 1 // 第二关左边操作键盘 (轮换)
-            },
-            { 
-                word: "RESILIENT", 
-                hintPattern: [true, false, false, true, false, true, false, true, false], 
-                options: ["R", "E", "S", "I", "L", "N", "T", "M"], 
-                definition: "【形】有弹性的；(关系) 坚韧的，经得起考验的",
-                example: "Our love is ______, able to withstand any challenge.",
-                startPlayer: 2 // 轮换回右边
+        // 1. 单词库 (扩充版)
+        const WORD_LIBRARY = [
+            // 浪漫类
+            { word: "ETERNAL", def: "【形】永恒的", ex: "I promise you my eternal love." },
+            { word: "CHERISH", def: "【动】珍爱", ex: "I will cherish every moment we spend together." },
+            { word: "DEVOTION", def: "【名】奉献，深爱", ex: "His devotion to her was obvious to everyone." },
+            { word: "SERENDIPITY", def: "【名】意外发现珍宝的运气", ex: "Meeting you was pure serendipity." },
+            { word: "HARMONY", def: "【名】和谐，融洽", ex: "We lived together in perfect harmony." },
+            // TOEFL/学习类
+            { word: "RESILIENT", def: "【形】坚韧的，有弹性的", ex: "Our love is resilient enough to survive any storm." },
+            { word: "ABUNDANT", def: "【形】丰富的，充裕的", ex: "We have an abundant supply of happiness." },
+            { word: "BRILLIANT", def: "【形】灿烂的，杰出的", ex: "You have a brilliant future ahead." },
+            { word: "ILLUMINATE", def: "【动】照亮，启迪", ex: "Your smile illuminates my whole world." },
+            { word: "CELESTIAL", def: "【形】天上的，神圣的", ex: "The moon is a beautiful celestial body." },
+            { word: "PROSPER", def: "【动】繁荣，成功", ex: "Together, we will prosper." },
+            { word: "GENUINE", def: "【形】真诚的，真实的", ex: "It was a movement of genuine affection." }
+        ];
+
+        // 2. 国际象棋关卡库 (骑士/马)
+        // grid: 0=Empty, 1=Pawn(Target), 2=Trap(Hidden), 3=Start(Knight), 4=Obstacle(Visible)
+        const CHESS_LEVELS = [
+            {
+                id: 1,
+                size: 4,
+                grid: [
+                    [1, 0, 2, 0],
+                    [0, 0, 1, 0],
+                    [0, 2, 0, 0],
+                    [3, 0, 0, 1]
+                ], // 3个卒子，2个陷阱
+                par: 6 // 参考步数
             },
             {
-                word: "ETERNAL",
-                hintPattern: [false, true, false, true, false, true, false],
-                options: ["E", "T", "R", "N", "A", "L", "S", "O"],
-                definition: "【形】永恒的，不朽的 (lasting or existing forever)",
-                example: "I promise you my ______ love.",
-                startPlayer: 1 // 轮换回左边
+                id: 2,
+                size: 5,
+                grid: [
+                    [1, 0, 2, 0, 1],
+                    [0, 0, 4, 0, 0],
+                    [2, 0, 3, 0, 2],
+                    [0, 0, 4, 0, 0],
+                    [1, 0, 2, 0, 1]
+                ], // 中心开花，四周有目标
+                par: 8
             }
         ];
 
-        // --- 通用组件 ---
+        // --- 辅助函数 ---
+        
+        // 随机挑选N个单词并生成谜题数据
+        const generateWordLevels = (count) => {
+            const shuffled = [...WORD_LIBRARY].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count).map((item, index) => {
+                const len = item.word.length;
+                // 生成提示遮罩: 随机遮住约40%的字母
+                const pattern = Array(len).fill(true).map(() => Math.random() > 0.4);
+                // 生成混淆选项: 正确字母 + 随机字母
+                const correctChars = Array.from(new Set(item.word.split('')));
+                const allChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                let options = [...correctChars];
+                while(options.length < Math.min(10, len + 3)) {
+                    const randomChar = allChars[Math.floor(Math.random() * 26)];
+                    if(!options.includes(randomChar)) options.push(randomChar);
+                }
+                options.sort(() => 0.5 - Math.random());
 
-        // Debug按钮组件
+                return {
+                    type: 'word',
+                    word: item.word,
+                    hintPattern: pattern,
+                    options: options,
+                    definition: item.def,
+                    example: item.ex,
+                    startPlayer: index % 2 === 0 ? 2 : 1 // 轮流控制
+                };
+            });
+        };
+
+        // --- 组件部分 ---
+
         const DebugButton = ({ onClick }) => (
             <button 
                 onClick={(e) => { e.stopPropagation(); onClick(); }}
-                className="absolute top-2 right-2 px-2 py-1 bg-red-900/20 text-red-500/30 text-xs rounded hover:bg-red-900 hover:text-white z-50 border border-transparent hover:border-red-500"
-            >
-                DEBUG: Pass
-            </button>
+                className="absolute bottom-2 right-2 w-8 h-8 opacity-0 hover:opacity-50 bg-red-500/20 rounded-full z-50 cursor-default"
+                title="Debug Pass"
+            />
         );
 
-        // 1. 月亮进度展示组件
+        // 背景组件
+        const StarBackground = () => (
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                <div className="stars"></div>
+                <div className="twinkling"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/60 to-slate-800/80"></div>
+            </div>
+        );
+
+        // 月亮显示组件
         const MoonDisplay = ({ progress, isFull }) => {
             return (
-                <div className={`relative w-48 h-48 transition-all duration-1000 ${isFull ? 'scale-150 moon-glow' : ''}`}>
-                    <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl">
-                        <defs>
-                            <filter id="glow">
-                                <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
-                                <feMerge>
-                                    <feMergeNode in="coloredBlur"/>
-                                    <feMergeNode in="SourceGraphic"/>
-                                </feMerge>
-                            </filter>
-                        </defs>
-                        <circle cx="50" cy="50" r="45" fill="#1e293b" stroke="#334155" strokeWidth="1" />
+                <div className={`moon-container relative w-64 h-64 p-4 transition-all duration-1000 ${isFull ? 'scale-125' : ''}`}>
+                    <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl moon-glow overflow-visible">
+                        {/* 暗部 */}
+                        <circle cx="50" cy="50" r="45" fill="#334155" stroke="none" opacity="0.5" />
+                        
+                        {/* 亮部 - 动态裁剪 */}
                         <g>
-                             <circle cx="50" cy="50" r="45" fill="#fde047" filter="url(#glow)" 
+                             <circle cx="50" cy="50" r="45" fill="#fde047" 
                                 style={{
                                     clipPath: `inset(0% ${100 - (progress * 100)}% 0% 0%)`,
-                                    transition: 'clip-path 1.5s ease-in-out'
+                                    transition: 'clip-path 1.5s cubic-bezier(0.4, 0, 0.2, 1)'
                                 }}
                              />
                         </g>
-                        <circle cx="30" cy="40" r="5" fill="rgba(0,0,0,0.1)" />
-                        <circle cx="60" cy="70" r="8" fill="rgba(0,0,0,0.1)" />
-                        <circle cx="70" cy="30" r="4" fill="rgba(0,0,0,0.1)" />
+                        {/* 纹理细节 */}
+                        <circle cx="35" cy="40" r="6" fill="rgba(0,0,0,0.08)" />
+                        <circle cx="65" cy="65" r="9" fill="rgba(0,0,0,0.08)" />
+                        <circle cx="75" cy="35" r="5" fill="rgba(0,0,0,0.08)" />
                     </svg>
                 </div>
             );
         };
 
-        // 2. 游戏 1: 单词心灵感应 (升级版 - 交替控制)
-        const GameWordPuzzle = ({ onComplete }) => {
-            const [currentRound, setCurrentRound] = useState(0);
+        // 游戏 1: 单词拼写 (优化版)
+        const GameWordPuzzle = ({ data, onComplete }) => {
             const [selectedChars, setSelectedChars] = useState([]);
             const [feedback, setFeedback] = useState(""); 
-
-            const puzzle = WORD_PUZZLES[currentRound];
-            
-            // 谁在操作键盘？
-            const isP1Controlling = puzzle.startPlayer === 1;
+            const isP1Controlling = data.startPlayer === 1;
 
             const handleCharClick = (char) => {
                 const newSelection = [...selectedChars, char];
                 setSelectedChars(newSelection);
 
-                if (newSelection.length === puzzle.word.length) {
-                    const attempt = newSelection.join("");
-                    if (attempt === puzzle.word) {
+                if (newSelection.length === data.word.length) {
+                    if (newSelection.join("") === data.word) {
                         setFeedback("correct");
-                        setTimeout(() => {
-                            if (currentRound < WORD_PUZZLES.length - 1) {
-                                setCurrentRound(c => c + 1);
-                                setSelectedChars([]);
-                                setFeedback("");
-                            } else {
-                                onComplete();
-                            }
-                        }, 1500);
+                        setTimeout(onComplete, 1200);
                     } else {
                         setFeedback("wrong");
                         setTimeout(() => {
@@ -192,121 +253,250 @@
                 }
             };
 
-            const debugPass = () => {
-                // 自动填入正确答案
-                setSelectedChars(puzzle.word.split(''));
-                setFeedback("correct");
-                setTimeout(() => {
-                    if (currentRound < WORD_PUZZLES.length - 1) {
-                        setCurrentRound(c => c + 1);
-                        setSelectedChars([]);
-                        setFeedback("");
-                    } else {
-                        onComplete();
-                    }
-                }, 1000);
-            };
-
-            // 生成展示用的Hint字符串 (将单词根据 pattern 遮挡)
-            const getDisplayWord = (fullWord, pattern, forController) => {
-                // Controller 看到的是填空界面，Hinter 看到的是残缺提示
-                // 为了增加合作，Hinter看到 Controller 看不到的部分
-                return fullWord.split('').map((char, i) => {
-                    // 如果是给Controller看，已选的字母显示，未选的显示空
-                    if (forController) return "_"; 
-                    // 如果是给 Hinter 看，显示 pattern 为 true 的部分，或者显示全部 hint
-                    return pattern[i] ? char : "_";
-                }).join(" ");
-            };
-
-            // 提示界面组件 (显示给没有键盘的人)
-            const HintPanel = ({ puzzle }) => (
-                <div className="flex flex-col items-center justify-center h-full px-12 text-center">
-                    <h3 className="text-xl text-yellow-500 mb-2 font-bold">你的任务: 提示搭档</h3>
-                    <div className="text-sm text-slate-400 mb-6">描述这个单词，或者告诉Ta缺什么字母</div>
-                    
-                    {/* 显示带缺口的单词提示 */}
-                    <div className="text-5xl font-mono tracking-widest text-slate-200 mb-8">
-                        {puzzle.word.split('').map((c, i) => puzzle.hintPattern[i] ? c : "_").join(" ")}
-                    </div>
-
-                    {/* 学习区域 */}
-                    <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700 w-full">
-                        <div className="text-lg text-yellow-100 font-serif mb-2">{puzzle.definition}</div>
-                        <div className="text-slate-400 italic">"{puzzle.example}"</div>
+            const ControlPanel = ({ currentInput, feedback, onInput }) => (
+                <div className="flex flex-col items-center justify-center h-full px-8 z-10 relative">
+                    <div className="bg-slate-800/80 backdrop-blur-md p-6 rounded-2xl border border-white/10 shadow-xl w-full max-w-md">
+                        <h3 className="text-lg text-green-400 mb-6 font-bold text-center tracking-widest font-sans-custom">SPELL THE WORD</h3>
+                        <div className={`mb-8 h-14 flex items-center justify-center text-3xl font-bold tracking-[0.2em] border-b-2 transition-colors w-full font-serif ${feedback === 'wrong' ? 'border-red-500 text-red-400' : (feedback === 'correct' ? 'border-green-500 text-green-400' : 'border-white/30')}`}>
+                            {currentInput.length > 0 ? currentInput.join(" ") : <span className="text-white/20 text-xl font-normal">点击字母拼写</span>}
+                        </div>
+                        <div className="grid grid-cols-5 gap-2">
+                            {data.options.map((char, idx) => (
+                                <button key={idx} 
+                                    className="aspect-square bg-slate-700/50 hover:bg-slate-600 rounded text-xl font-bold border border-white/10 active:scale-95 transition-all shadow-lg font-sans-custom"
+                                    onClick={() => onInput(char)}>{char}</button>
+                            ))}
+                            <button className="aspect-square col-span-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded flex items-center justify-center active:scale-95 transition-all"
+                                onClick={() => setSelectedChars(prev => prev.slice(0, -1))}><i className="ph ph-backspace text-xl"></i></button>
+                        </div>
                     </div>
                 </div>
             );
 
-            // 操作界面组件 (显示给有键盘的人)
-            const ControlPanel = ({ puzzle, currentInput, feedback, onInput }) => (
-                <div className="flex flex-col items-center justify-center h-full px-8 relative">
-                    <h3 className="text-xl text-green-400 mb-4 font-bold">你的任务: 拼写单词</h3>
-                    
-                    {/* 输入框 */}
-                    <div className={`mb-8 h-16 flex items-center justify-center text-4xl font-bold tracking-widest border-b-4 transition-colors w-full ${feedback === 'wrong' ? 'border-red-500 text-red-400' : (feedback === 'correct' ? 'border-green-500 text-green-400' : 'border-slate-500')}`}>
-                        {currentInput.length > 0 ? currentInput.join(" ") : <span className="text-slate-700 animate-pulse">等待输入...</span>}
-                    </div>
-
-                    {/* 键盘 */}
-                    <div className="grid grid-cols-5 gap-3 w-full max-w-lg">
-                        {puzzle.options.map((char, idx) => (
-                            <button 
-                                key={idx}
-                                className="aspect-square bg-slate-700 rounded-lg text-2xl font-bold active:bg-yellow-500 active:scale-95 transition-all shadow-lg border-b-4 border-slate-950 hover:bg-slate-600"
-                                onClick={() => onInput(char)}
-                            >
-                                {char}
-                            </button>
-                        ))}
-                        <button 
-                            className="aspect-square col-span-1 bg-red-900/50 rounded-lg text-xl flex items-center justify-center active:scale-95 transition-all border-b-4 border-red-950 hover:bg-red-900/70"
-                            onClick={() => setSelectedChars(prev => prev.slice(0, -1))}
-                        >
-                            <i className="ph ph-backspace"></i>
-                        </button>
+            const HintPanel = () => (
+                <div className="flex flex-col items-center justify-center h-full px-12 z-10 relative text-center">
+                    <div className="bg-yellow-900/20 backdrop-blur-md p-8 rounded-2xl border border-yellow-500/20 shadow-[0_0_30px_rgba(234,179,8,0.1)] w-full max-w-md">
+                        <h3 className="text-sm text-yellow-500 mb-4 font-bold tracking-widest font-sans-custom">CLUE CARD</h3>
+                        <div className="text-4xl font-mono tracking-widest text-yellow-100 mb-8 font-bold opacity-90">
+                            {data.word.split('').map((c, i) => data.hintPattern[i] ? c : "_").join(" ")}
+                        </div>
+                        <div className="space-y-3">
+                            <div className="text-xl text-white font-serif">{data.definition}</div>
+                            <div className="text-slate-400 text-sm italic font-sans-custom leading-relaxed">"{data.example}"</div>
+                        </div>
                     </div>
                 </div>
             );
 
             return (
                 <div className="flex w-full h-full relative">
-                    <DebugButton onClick={debugPass} />
-                    
-                    {/* 左侧区域 */}
-                    <div className="w-1/2 border-r border-slate-700 bg-slate-900 relative">
-                        {isP1Controlling ? (
-                            <ControlPanel 
-                                puzzle={puzzle} 
-                                currentInput={selectedChars} 
-                                feedback={feedback} 
-                                onInput={handleCharClick} 
-                            />
-                        ) : (
-                            <HintPanel puzzle={puzzle} />
-                        )}
-                        <div className="absolute top-4 left-4 text-xs font-bold text-slate-600">PLAYER 1</div>
+                    <DebugButton onClick={() => onComplete()} />
+                    <div className="w-1/2 border-r border-white/10 relative">
+                        {isP1Controlling ? <ControlPanel currentInput={selectedChars} feedback={feedback} onInput={handleCharClick} /> : <HintPanel />}
+                        <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 font-sans-custom">PLAYER 1</div>
                     </div>
-
-                    {/* 右侧区域 */}
-                    <div className="w-1/2 bg-slate-800 relative">
-                        {!isP1Controlling ? (
-                             <ControlPanel 
-                                puzzle={puzzle} 
-                                currentInput={selectedChars} 
-                                feedback={feedback} 
-                                onInput={handleCharClick} 
-                            />
-                        ) : (
-                            <HintPanel puzzle={puzzle} />
-                        )}
-                        <div className="absolute top-4 right-4 text-xs font-bold text-slate-600">PLAYER 2</div>
+                    <div className="w-1/2 relative">
+                        {!isP1Controlling ? <ControlPanel currentInput={selectedChars} feedback={feedback} onInput={handleCharClick} /> : <HintPanel />}
+                        <div className="absolute top-4 right-4 text-xs font-bold text-slate-500 font-sans-custom">PLAYER 2</div>
                     </div>
                 </div>
             );
         };
 
-        // 3. 游戏 2: 同步共振 (保持不变，增加调试)
+        // 游戏 2: 星际骑士 (Star Knight - Chess Logic)
+        const GameStarKnight = ({ levelId = 1, onComplete }) => {
+            // Level data setup
+            const levelData = CHESS_LEVELS.find(l => l.id === levelId) || CHESS_LEVELS[0];
+            const [knightPos, setKnightPos] = useState({r:3, c:0}); // Default start, will sync with grid
+            const [targetsLeft, setTargetsLeft] = useState(0);
+            const [gameStatus, setGameStatus] = useState("playing"); // playing, won, lost
+
+            // Initialize position and target count
+            useEffect(() => {
+                let start = {r:0, c:0};
+                let tCount = 0;
+                levelData.grid.forEach((row, r) => {
+                    row.forEach((cell, c) => {
+                        if(cell === 3) start = {r, c};
+                        if(cell === 1) tCount++;
+                    });
+                });
+                setKnightPos(start);
+                setTargetsLeft(tCount);
+                setGameStatus("playing");
+            }, [levelData]);
+
+            // Knight's Move Logic (L-shape)
+            const isValidMove = (r1, c1, r2, c2) => {
+                const dr = Math.abs(r1 - r2);
+                const dc = Math.abs(c1 - c2);
+                return (dr === 2 && dc === 1) || (dr === 1 && dc === 2);
+            };
+
+            const handleSquareClick = (r, c) => {
+                if (gameStatus !== "playing") return;
+                
+                // Only allow valid moves
+                if (!isValidMove(knightPos.r, knightPos.c, r, c)) return;
+
+                const cellType = levelData.grid[r][c];
+                
+                // Obstacle check
+                if (cellType === 4) return; // Cannot move to wall
+
+                // Trap check
+                if (cellType === 2) {
+                    setGameStatus("lost");
+                    setTimeout(() => {
+                        // Reset level
+                        let start = {r:0, c:0};
+                        let tCount = 0;
+                        levelData.grid.forEach((row, rr) => {
+                            row.forEach((cell, cc) => {
+                                if(cell === 3) start = {rr, cc};
+                                if(cell === 1) tCount++;
+                            });
+                        });
+                        setKnightPos(start);
+                        setTargetsLeft(tCount);
+                        setGameStatus("playing");
+                    }, 1500);
+                    return;
+                }
+
+                // Move Knight
+                setKnightPos({r, c});
+
+                // Target check (simple local state, in real app need persistent grid state if targets disappear)
+                // For simplicity here: we assume targets disappear when visited. 
+                // We need a `visited` state array.
+            };
+            
+            // To handle "eating" correctly, we need state for the grid items
+            const [activeGrid, setActiveGrid] = useState([]);
+            useEffect(() => {
+                setActiveGrid(JSON.parse(JSON.stringify(levelData.grid)));
+            }, [levelData, gameStatus === "playing"]); // Reset when status resets
+
+            const handleMove = (r, c) => {
+                if (gameStatus !== "playing") return;
+                if (!isValidMove(knightPos.r, knightPos.c, r, c)) return;
+                
+                const cellType = activeGrid[r][c];
+
+                if (cellType === 4) return; // Wall
+
+                if (cellType === 2) {
+                    // Trap triggered
+                    setGameStatus("lost");
+                    // Reset handled by effect dependency or manual reset function above
+                     setTimeout(() => {
+                        // Quick reset visual
+                         const start = {r:0, c:0};
+                         levelData.grid.forEach((row, rr) => {
+                             row.forEach((cell, cc) => { if(cell === 3) start = {rr, cc}; });
+                         });
+                         setKnightPos(start);
+                         setActiveGrid(JSON.parse(JSON.stringify(levelData.grid))); // Restore targets
+                         setTargetsLeft(levelData.grid.flat().filter(x=>x===1).length);
+                         setGameStatus("playing");
+                     }, 1500);
+                    return;
+                }
+
+                // Valid move
+                setKnightPos({r, c});
+                
+                if (cellType === 1) {
+                    // Eat target
+                    const newGrid = [...activeGrid];
+                    newGrid[r][c] = 0; // Empty now
+                    setActiveGrid(newGrid);
+                    const newCount = targetsLeft - 1;
+                    setTargetsLeft(newCount);
+                    if (newCount === 0) {
+                        setGameStatus("won");
+                        setTimeout(onComplete, 1500);
+                    }
+                }
+            };
+
+            // Player 1 View: The Board & Pieces (But NO Traps)
+            const BoardView = () => (
+                <div className="flex flex-col items-center justify-center h-full z-10 relative">
+                     <h3 className="text-lg text-cyan-400 mb-6 font-bold tracking-widest font-sans-custom">
+                         {gameStatus === "lost" ? <span className="text-red-500">TRAP TRIGGERED! RETRYING...</span> : "KNIGHT'S PATH"}
+                     </h3>
+                     <div className="grid gap-2 p-4 bg-slate-800/50 rounded-xl border border-white/10" 
+                          style={{gridTemplateColumns: `repeat(${levelData.size}, minmax(0, 1fr))`}}>
+                        {activeGrid.map((row, r) => row.map((cell, c) => {
+                            const isKnight = r === knightPos.r && c === knightPos.c;
+                            const isTarget = cell === 1;
+                            const isWall = cell === 4;
+                            const canMove = isValidMove(knightPos.r, knightPos.c, r, c);
+                            
+                            return (
+                                <div key={`${r}-${c}`} 
+                                    onClick={() => handleMove(r, c)}
+                                    className={`w-14 h-14 rounded-lg flex items-center justify-center text-2xl transition-all duration-300 relative
+                                        ${isWall ? 'bg-slate-700 opacity-50' : 'bg-slate-700/30'}
+                                        ${canMove ? 'ring-2 ring-white/20 cursor-pointer hover:bg-white/10' : ''}
+                                        ${isKnight ? 'z-10' : ''}
+                                    `}>
+                                    {isKnight && <i className="ph-fill ph-horse text-cyan-400 text-3xl animate-bounce"></i>}
+                                    {isTarget && !isKnight && <i className="ph-fill ph-star text-yellow-400 text-xl animate-pulse"></i>}
+                                    {/* P1 does NOT see traps (cell === 2) */}
+                                    {canMove && <div className="absolute w-2 h-2 bg-white/20 rounded-full"></div>}
+                                </div>
+                            );
+                        }))}
+                     </div>
+                     <div className="mt-4 text-sm text-slate-400 font-sans-custom">目标剩余: {targetsLeft}</div>
+                </div>
+            );
+
+            // Player 2 View: The Radar (Shows Traps)
+            const RadarView = () => (
+                <div className="flex flex-col items-center justify-center h-full z-10 relative px-12 text-center">
+                    <h3 className="text-lg text-red-400 mb-6 font-bold tracking-widest font-sans-custom">RADAR ACTIVE</h3>
+                    <div className="grid gap-2 p-4 bg-red-900/10 rounded-xl border border-red-500/20" 
+                          style={{gridTemplateColumns: `repeat(${levelData.size}, minmax(0, 1fr))`}}>
+                        {activeGrid.map((row, r) => row.map((cell, c) => {
+                            const isTrap = cell === 2;
+                            const isKnight = r === knightPos.r && c === knightPos.c;
+                            return (
+                                <div key={`${r}-${c}`} 
+                                    className={`w-14 h-14 rounded-lg flex items-center justify-center text-xl
+                                        ${isTrap ? 'bg-red-500/20 border border-red-500/50' : 'bg-transparent border border-white/5'}
+                                    `}>
+                                    {isTrap && <i className="ph-fill ph-skull text-red-500"></i>}
+                                    {isKnight && <div className="w-3 h-3 bg-cyan-400 rounded-full animate-ping"></div>}
+                                </div>
+                            );
+                        }))}
+                    </div>
+                    <p className="mt-6 text-slate-300 text-sm font-sans-custom max-w-xs">
+                        警告：雷达显示了隐形陷阱（骷髅）。<br/>指挥你的搭档避开它们，吃掉所有的星星。
+                    </p>
+                </div>
+            );
+
+            return (
+                <div className="flex w-full h-full relative">
+                    <DebugButton onClick={() => onComplete()} />
+                    <div className="w-1/2 border-r border-white/10 relative">
+                        <BoardView />
+                        <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 font-sans-custom">PILOT (操作)</div>
+                    </div>
+                    <div className="w-1/2 relative">
+                        <RadarView />
+                        <div className="absolute top-4 right-4 text-xs font-bold text-slate-500 font-sans-custom">NAVIGATOR (导航)</div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 游戏 3: 同步共振
         const GameSyncReaction = ({ onComplete }) => {
             const [gameState, setGameState] = useState("waiting");
             const [count, setCount] = useState(3);
@@ -331,56 +521,40 @@
 
             const handleTouch = (player) => {
                 if (gameState !== "active") return;
-                if (player === 1) setP1Ready(false);
-                if (player === 2) setP2Ready(false);
-                 setGameState("success");
-                 setTimeout(onComplete, 1500);
-            };
-
-            const debugPass = () => {
                 setGameState("success");
-                setTimeout(onComplete, 1000);
+                setTimeout(onComplete, 1500);
             };
 
             return (
-                <div className="flex w-full h-full relative">
-                     <DebugButton onClick={debugPass} />
-                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none text-center w-full">
-                        {gameState === "waiting" && <div className="text-2xl bg-black/60 px-8 py-4 rounded-full backdrop-blur border border-white/10 text-white">两人同时按住按钮充能</div>}
-                        {gameState === "counting" && <div className="text-[12rem] font-bold text-yellow-400 scale-animate leading-none">{count}</div>}
-                        {gameState === "active" && <div className="text-8xl font-black text-green-400 tracking-tighter animate-pulse">TAP NOW!</div>}
-                        {gameState === "success" && <div className="text-5xl font-bold text-yellow-400 font-proposal">Perfect Harmony</div>}
+                <div className="flex w-full h-full relative z-10">
+                     <DebugButton onClick={onComplete} />
+                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none text-center w-full">
+                        {gameState === "waiting" && <div className="text-2xl font-sans-custom text-white tracking-widest animate-pulse">两人同时按住指纹</div>}
+                        {gameState === "counting" && <div className="text-[10rem] font-bold text-yellow-400 font-sans-custom">{count}</div>}
+                        {gameState === "active" && <div className="text-8xl font-black text-green-400 tracking-tighter animate-pulse font-sans-custom">TAP!</div>}
+                        {gameState === "success" && <div className="text-4xl font-bold text-yellow-400 font-proposal-en">Perfect Harmony</div>}
                     </div>
 
-                    <div 
-                        className={`w-1/2 border-r border-slate-700 flex items-center justify-center transition-colors duration-300 ${gameState === 'success' ? 'bg-green-900' : 'bg-slate-900'}`}
-                        onTouchStart={() => gameState === 'active' ? handleTouch(1) : setP1Ready(true)}
-                        onMouseDown={() => gameState === 'active' ? handleTouch(1) : setP1Ready(true)}
-                        onMouseUp={() => gameState === 'waiting' && setP1Ready(false)}
-                        onTouchEnd={() => gameState === 'waiting' && setP1Ready(false)}
-                    >
-                        <div className={`w-64 h-64 rounded-full border-8 flex items-center justify-center transition-all duration-300 cursor-pointer ${p1Ready ? 'border-yellow-400 bg-yellow-400/20 scale-105 shadow-[0_0_50px_rgba(250,204,21,0.5)]' : 'border-slate-700 hover:border-slate-500'}`}>
-                            <i className={`ph ph-fingerprint text-8xl transition-all ${p1Ready ? 'text-yellow-400 opacity-100' : 'text-slate-600 opacity-50'}`}></i>
+                    {[1, 2].map(player => (
+                        <div key={player}
+                            className={`w-1/2 flex items-center justify-center transition-all duration-500 ${player===1?'border-r border-white/10':''} ${gameState === 'success' ? 'bg-green-500/20' : ''}`}
+                            onTouchStart={() => gameState === 'active' ? handleTouch(player) : (player===1?setP1Ready(true):setP2Ready(true))}
+                            onMouseDown={() => gameState === 'active' ? handleTouch(player) : (player===1?setP1Ready(true):setP2Ready(true))}
+                            onMouseUp={() => gameState === 'waiting' && (player===1?setP1Ready(false):setP2Ready(false))}
+                            onTouchEnd={() => gameState === 'waiting' && (player===1?setP1Ready(false):setP2Ready(false))}
+                        >
+                            <div className={`w-48 h-48 rounded-full border-2 flex items-center justify-center transition-all duration-300 
+                                ${(player===1?p1Ready:p2Ready) ? 'border-yellow-400 bg-yellow-400/20 scale-110 shadow-[0_0_50px_rgba(250,204,21,0.5)]' : 'border-white/20 bg-white/5 hover:bg-white/10'}`}>
+                                <i className={`ph-fill ph-fingerprint text-6xl ${(player===1?p1Ready:p2Ready) ? 'text-yellow-400' : 'text-white/30'}`}></i>
+                            </div>
                         </div>
-                    </div>
-
-                    <div 
-                        className={`w-1/2 flex items-center justify-center transition-colors duration-300 ${gameState === 'success' ? 'bg-green-900' : 'bg-slate-800'}`}
-                        onTouchStart={() => gameState === 'active' ? handleTouch(2) : setP2Ready(true)}
-                        onMouseDown={() => gameState === 'active' ? handleTouch(2) : setP2Ready(true)}
-                        onMouseUp={() => gameState === 'waiting' && setP2Ready(false)}
-                        onTouchEnd={() => gameState === 'waiting' && setP2Ready(false)}
-                    >
-                        <div className={`w-64 h-64 rounded-full border-8 flex items-center justify-center transition-all duration-300 cursor-pointer ${p2Ready ? 'border-yellow-400 bg-yellow-400/20 scale-105 shadow-[0_0_50px_rgba(250,204,21,0.5)]' : 'border-slate-700 hover:border-slate-500'}`}>
-                             <i className={`ph ph-fingerprint text-8xl transition-all ${p2Ready ? 'text-yellow-400 opacity-100' : 'text-slate-600 opacity-50'}`}></i>
-                        </div>
-                    </div>
+                    ))}
                 </div>
             );
         };
 
-        // 4. 求婚结局页面 (字体优化)
-        const ProposalScreen = () => {
+        // 结局页面 (优化排版)
+        const ProposalScreen = ({ onReplay }) => {
             const [step, setStep] = useState(0);
 
             useEffect(() => {
@@ -391,29 +565,37 @@
 
             return (
                 <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center text-center p-8 overflow-hidden">
-                    <div className="absolute inset-0 opacity-50" style={{backgroundImage: 'radial-gradient(white 1px, transparent 1px)', backgroundSize: '50px 50px'}}></div>
+                    <StarBackground />
                     
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-20 blur-3xl">
-                        <div className="w-96 h-96 bg-yellow-200 rounded-full animate-pulse"></div>
+                    {/* 月亮背景装饰 */}
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-20 blur-3xl pointer-events-none">
+                        <div className="w-[500px] h-[500px] bg-yellow-100 rounded-full animate-pulse"></div>
                     </div>
 
-                    <div className="relative z-10 max-w-4xl font-proposal">
-                        <h1 className={`text-6xl text-yellow-100 mb-12 transition-all duration-1000 transform ${step >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}>
+                    <div className="relative z-10 max-w-4xl">
+                        {/* 称呼 */}
+                        <h1 className={`text-5xl font-proposal-cn text-yellow-50 mb-8 transition-all duration-1000 transform ${step >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-8'}`}>
                             {PROPOSAL_TEXT.title}
                         </h1>
                         
-                        <div className={`text-3xl leading-loose text-slate-300 mb-16 whitespace-pre-line transition-all duration-1000 delay-300 ${step >= 2 ? 'opacity-100' : 'opacity-0'}`}>
+                        {/* 誓词 - 缩小行距 (leading-relaxed -> leading-normal) */}
+                        <div className={`text-2xl leading-normal text-slate-200 mb-12 whitespace-pre-line font-proposal-cn transition-all duration-1000 delay-300 ${step >= 2 ? 'opacity-100' : 'opacity-0'}`}>
                             {PROPOSAL_TEXT.body}
                         </div>
 
-                        <div className={`transition-all duration-1000 transform ${step >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                             <h2 className="text-5xl font-bold text-white mb-16 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]">
+                        {/* 问题与按钮 */}
+                        <div className={`transition-all duration-1000 transform ${step >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                             <h2 className="text-4xl font-bold text-white mb-16 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] font-proposal-cn">
                                 {PROPOSAL_TEXT.question}
                             </h2>
                             
-                            <div className="flex gap-8 justify-center">
-                                <button className="px-16 py-6 bg-yellow-500 text-yellow-950 rounded-full text-3xl font-bold shadow-[0_0_40px_rgba(234,179,8,0.6)] active:scale-95 transition-transform animate-bounce font-sans">
-                                    YES, I DO!
+                            <div className="flex flex-col gap-6 items-center">
+                                <button className="px-16 py-4 bg-yellow-500 hover:bg-yellow-400 text-yellow-950 rounded-full text-2xl font-bold shadow-[0_0_40px_rgba(234,179,8,0.5)] active:scale-95 transition-all animate-bounce font-proposal-en">
+                                    YES, I DO
+                                </button>
+                                
+                                <button onClick={onReplay} className="text-slate-500 hover:text-white text-sm border-b border-transparent hover:border-white transition-all font-sans-custom mt-4">
+                                    返回主页 (Replay)
                                 </button>
                             </div>
                         </div>
@@ -425,74 +607,89 @@
         // --- 主程序 App ---
         const App = () => {
             const [gameStage, setGameStage] = useState("menu"); 
-            const [level, setLevel] = useState(1);
+            const [levelIndex, setLevelIndex] = useState(0);
             const [moonProgress, setMoonProgress] = useState(0); 
             
-            const TOTAL_LEVELS = 2; 
+            // 动态生成游戏关卡列表
+            // 顺序: Word -> Knight -> Word -> Sync
+            const levels = useMemo(() => {
+                const words = generateWordLevels(2);
+                return [
+                    { type: 'word', data: words[0] },
+                    { type: 'knight', data: { id: 1 } },
+                    { type: 'word', data: words[1] },
+                    { type: 'sync', data: {} }
+                ];
+            }, [gameStage === 'menu']); // 只在重置菜单时重新生成
 
             const startGame = () => {
+                setLevelIndex(0);
+                setMoonProgress(0);
                 setGameStage("playing");
             };
 
             const handleLevelComplete = () => {
                 setGameStage("transition");
-                const newProgress = level / TOTAL_LEVELS;
+                const nextLevel = levelIndex + 1;
+                const newProgress = nextLevel / levels.length;
                 setMoonProgress(newProgress);
 
                 setTimeout(() => {
-                    if (level < TOTAL_LEVELS) {
-                        setLevel(l => l + 1);
+                    if (nextLevel < levels.length) {
+                        setLevelIndex(nextLevel);
                         setGameStage("playing");
                     } else {
                         setGameStage("ending");
                     }
-                }, 4000); 
+                }, 3500); 
             };
 
-            // 强制横屏检查提示
+            // 横屏检查
             const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
             useEffect(() => {
-                const checkOrientation = () => setIsLandscape(window.innerWidth > window.innerHeight);
-                window.addEventListener('resize', checkOrientation);
-                return () => window.removeEventListener('resize', checkOrientation);
+                const check = () => setIsLandscape(window.innerWidth > window.innerHeight);
+                window.addEventListener('resize', check);
+                return () => window.removeEventListener('resize', check);
             }, []);
 
             if (!isLandscape) {
                 return (
-                    <div className="w-screen h-screen bg-black flex flex-col items-center justify-center text-white p-8 text-center">
+                    <div className="w-screen h-screen bg-black flex flex-col items-center justify-center text-white p-8 text-center font-sans-custom">
                         <i className="ph ph-device-rotate text-6xl mb-4 animate-spin-slow"></i>
-                        <h2 className="text-xl">请旋转 iPad 至横屏模式以获得最佳体验</h2>
+                        <h2 className="text-xl">请旋转 iPad 至横屏模式</h2>
                     </div>
                 );
             }
 
+            const currentLevel = levels[levelIndex];
+
             return (
-                <div className="w-screen h-screen bg-slate-900 flex flex-col overflow-hidden">
+                <div className="w-screen h-screen flex flex-col overflow-hidden relative">
+                    <StarBackground />
+
                     {/* 顶部状态栏 */}
-                    <div className="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-950/50 backdrop-blur z-20">
-                        <div className="text-slate-400 text-sm font-bold tracking-widest">MOONLIGHT MOSAIC</div>
-                        <div className="text-yellow-500 font-serif italic">Level {level} / {TOTAL_LEVELS}</div>
+                    <div className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur z-20">
+                        <div className="text-slate-400 text-sm font-bold tracking-widest font-sans-custom">MOONLIGHT MOSAIC</div>
+                        <div className="text-yellow-500 font-proposal-en italic text-lg">Level {levelIndex + 1} / {levels.length}</div>
                     </div>
 
                     <div className="flex-1 relative">
                         {gameStage === "menu" && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center z-50 bg-slate-900/90">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center z-50">
                                 <MoonDisplay progress={0} isFull={false} />
-                                <h1 className="text-7xl font-thin text-white mt-8 mb-4 tracking-tighter font-serif">月光拼图</h1>
-                                <p className="text-slate-400 mb-12 text-xl font-proposal">双人合作 · 学习 · 见证爱</p>
-                                <button 
-                                    onClick={startGame}
-                                    className="px-12 py-5 border border-yellow-500/50 text-yellow-400 rounded-full hover:bg-yellow-500/10 hover:border-yellow-400 transition-all text-2xl tracking-widest"
-                                >
+                                <h1 className="text-7xl text-white mt-8 mb-4 tracking-tighter font-proposal-en">Moonlight Mosaic</h1>
+                                <p className="text-slate-300 mb-12 text-xl font-proposal-cn tracking-widest">双人 · 协作 · 永恒</p>
+                                <button onClick={startGame}
+                                    className="px-12 py-4 border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 rounded-full hover:bg-yellow-500/20 hover:border-yellow-400 transition-all text-xl tracking-widest font-sans-custom backdrop-blur-sm">
                                     START GAME
                                 </button>
                             </div>
                         )}
 
                         {gameStage === "transition" && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center z-40 bg-slate-900/95 backdrop-blur-md transition-all duration-500">
-                                <div className="text-3xl text-yellow-300 mb-12 font-proposal animate-bounce">
-                                    {level === TOTAL_LEVELS ? "月亮完整了..." : "关卡完成! 收集到月光碎片"}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center z-40 bg-slate-900/60 backdrop-blur-md transition-all duration-500">
+                                <div className="text-3xl text-yellow-300 mb-12 font-proposal-cn animate-bounce">
+                                    {levelIndex + 1 === levels.length ? "月亮完整了..." : "收集到月光碎片"}
                                 </div>
                                 <div className="shard-animate">
                                     <MoonDisplay progress={moonProgress} isFull={moonProgress >= 0.99} />
@@ -502,13 +699,14 @@
 
                         {gameStage === "playing" && (
                             <div className="w-full h-full">
-                                {level === 1 && <GameWordPuzzle onComplete={handleLevelComplete} />}
-                                {level === 2 && <GameSyncReaction onComplete={handleLevelComplete} />}
+                                {currentLevel.type === 'word' && <GameWordPuzzle data={currentLevel.data} onComplete={handleLevelComplete} />}
+                                {currentLevel.type === 'knight' && <GameStarKnight levelId={currentLevel.data.id} onComplete={handleLevelComplete} />}
+                                {currentLevel.type === 'sync' && <GameSyncReaction onComplete={handleLevelComplete} />}
                             </div>
                         )}
 
                         {gameStage === "ending" && (
-                            <ProposalScreen />
+                            <ProposalScreen onReplay={() => setGameStage("menu")} />
                         )}
                     </div>
                 </div>
