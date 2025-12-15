@@ -2,13 +2,14 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 关键修改：开启 iOS Web App 全屏模式 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-touch-fullscreen" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Moonlight Mosaic">
     <meta name="mobile-web-app-capable" content="yes">
-    <!-- 禁止缩放 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- 添加一个图标占位符，有助于iOS识别PWA -->
+    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==">
     
     <title>Moonlight Mosaic - 我们的月光拼图</title>
     <!-- 引入 React 和 ReactDOM -->
@@ -31,9 +32,9 @@
             background-color: #0f172a; /* Slate 900 */
             color: #f8fafc;
             font-family: 'Times New Roman', serif;
-            /* 适配刘海屏 */
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
+            padding-bottom: env(safe-area-inset-bottom);
         }
         
         /* --- 字体定制 --- */
@@ -75,13 +76,22 @@
             100% { transform: scale(1) translate(0, 0); opacity: 1; }
         }
         .shard-animate { animation: fly-in 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        
+        /* 棋盘格线 */
+        .gomoku-grid {
+            background-image: 
+                linear-gradient(#64748b 1px, transparent 1px),
+                linear-gradient(90deg, #64748b 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef, useMemo } = React;
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
         // --- 游戏内容数据库 ---
         
@@ -109,57 +119,81 @@
             { word: "GRATITUDE", def: "【名】感激", ex: "I feel eternal gratitude for your love." }
         ];
 
-        // 扩展的国际象棋关卡库
+        // 国际象棋关卡库
         const CHESS_LEVELS = [
+            { id: 1, size: 4, grid: [[1,0,2,0],[0,0,1,0],[0,2,0,0],[3,0,0,1]], par: 6 },
+            { id: 2, size: 5, grid: [[1,0,2,0,1],[0,0,4,0,0],[2,0,3,0,2],[0,0,4,0,0],[1,0,2,0,1]], par: 8 },
+            { id: 3, size: 6, grid: [[0,1,0,0,1,0],[2,0,0,2,0,0],[0,0,4,4,0,0],[0,0,4,4,0,0],[0,2,0,0,2,0],[1,0,3,0,0,1]], par: 12 }
+        ];
+
+        // 五子棋残局库 (黑子先行，Win in 1)
+        // 1=Black(User), 2=White(AI), 0=Empty, 3=Hint
+        const GOMOKU_LEVELS = [
             {
                 id: 1,
-                size: 4,
-                grid: [
-                    [1, 0, 2, 0],
-                    [0, 0, 1, 0],
-                    [0, 2, 0, 0],
-                    [3, 0, 0, 1]
-                ], // 入门：3目标，2陷阱
-                par: 6
+                // 横向四连缺一
+                pieces: [{r:4,c:3,t:1},{r:4,c:4,t:1},{r:4,c:6,t:1},{r:4,c:7,t:1}, {r:5,c:5,t:2}, {r:3,c:5,t:2}],
+                winSpot: {r:4, c:5}
             },
             {
                 id: 2,
-                size: 5,
-                grid: [
-                    [1, 0, 2, 0, 1],
-                    [0, 0, 4, 0, 0],
-                    [2, 0, 3, 0, 2],
-                    [0, 0, 4, 0, 0],
-                    [1, 0, 2, 0, 1]
-                ], // 进阶：四周目标
-                par: 8
+                // 斜向杀棋
+                pieces: [{r:2,c:2,t:1},{r:3,c:3,t:1},{r:5,c:5,t:1}, {r:2,c:3,t:2},{r:3,c:2,t:2}],
+                winSpot: {r:4, c:4}
             },
             {
                 id: 3,
-                size: 6,
-                grid: [
-                    [0, 1, 0, 0, 1, 0],
-                    [2, 0, 0, 2, 0, 0],
-                    [0, 0, 4, 4, 0, 0],
-                    [0, 0, 4, 4, 0, 0],
-                    [0, 2, 0, 0, 2, 0],
-                    [1, 0, 3, 0, 0, 1]
-                ], // 困难：中心墙壁，分散目标
-                par: 12
+                // 复杂一点的活三变活四
+                pieces: [{r:5,c:5,t:1},{r:5,c:6,t:1},{r:5,c:7,t:1}, {r:4,c:6,t:2},{r:6,c:6,t:2}],
+                winSpot: {r:5, c:4} // 或者 c:8
             }
         ];
 
-        // --- 游戏结构配置 (6个章节) ---
-        // 动态生成，每次刷新游戏顺序可能微调，但结构固定
+        // 迷你数独 (4x4)
+        // 0 = empty
+        const SUDOKU_LEVELS = [
+            {
+                id: 1,
+                initial: [
+                    [1,0,0,4],
+                    [0,0,0,0],
+                    [0,0,0,0],
+                    [2,0,0,3]
+                ],
+                solution: [
+                    [1,2,3,4],
+                    [3,4,1,2],
+                    [4,3,2,1],
+                    [2,1,4,3]
+                ]
+            },
+            {
+                id: 2,
+                initial: [
+                    [0,2,0,0],
+                    [3,0,0,2],
+                    [1,0,0,4],
+                    [0,0,2,0]
+                ],
+                solution: [
+                    [4,2,3,1],
+                    [3,1,4,2],
+                    [1,3,2,4],
+                    [2,4,1,3]
+                ]
+            }
+        ];
+
+        // --- 游戏生成器 ---
         const generateGameStructure = () => {
             const words = [...WORD_LIBRARY].sort(() => 0.5 - Math.random());
+            
             const getWords = (count) => {
                 const selected = words.splice(0, count);
                 return selected.map((item, idx) => ({
                     type: 'word',
                     data: {
                         ...item,
-                        // 动态生成遮罩和选项
                         hintPattern: Array(item.word.length).fill(true).map(() => Math.random() > 0.45),
                         options: generateOptions(item.word),
                         startPlayer: Math.random() > 0.5 ? 1 : 2
@@ -178,52 +212,36 @@
                 return opts.sort(() => 0.5 - Math.random());
             };
 
+            // 6 章节，每个章节 4-5 个游戏
             return [
                 {
                     title: "Chapter 1: 初识",
-                    games: [...getWords(2)] 
+                    games: [...getWords(2), { type: 'gomoku', data: GOMOKU_LEVELS[0] }, { type: 'word', data: getWords(1)[0].data }] 
                 },
                 {
                     title: "Chapter 2: 探索",
-                    games: [
-                        ...getWords(1),
-                        { type: 'knight', data: { id: 1 } }
-                    ]
+                    games: [...getWords(1), { type: 'knight', data: { id: 1 } }, { type: 'sudoku', data: SUDOKU_LEVELS[0] }, { type: 'sync', data: {} }]
                 },
                 {
                     title: "Chapter 3: 磨合",
-                    games: [
-                        { type: 'knight', data: { id: 2 } },
-                        { type: 'sync', data: {} },
-                        ...getWords(1)
-                    ]
+                    games: [{ type: 'knight', data: { id: 2 } }, ...getWords(1), { type: 'gomoku', data: GOMOKU_LEVELS[1] }, { type: 'sudoku', data: SUDOKU_LEVELS[1] }]
                 },
                 {
                     title: "Chapter 4: 默契",
-                    games: [
-                        ...getWords(2),
-                        { type: 'knight', data: { id: 3 } }
-                    ]
+                    games: [...getWords(2), { type: 'knight', data: { id: 3 } }, { type: 'gomoku', data: GOMOKU_LEVELS[2] }]
                 },
                 {
                     title: "Chapter 5: 心有灵犀",
-                    games: [
-                        { type: 'sync', data: {} },
-                        { type: 'knight', data: { id: 2 } }, // 重复一个关卡加强印象
-                        ...getWords(1)
-                    ]
+                    games: [{ type: 'sync', data: {} }, { type: 'sudoku', data: SUDOKU_LEVELS[0] }, { type: 'knight', data: { id: 2 } }, ...getWords(1)]
                 },
                 {
                     title: "Chapter 6: 圆满",
-                    games: [
-                        ...getWords(1),
-                        { type: 'sync', data: {} }
-                    ]
+                    games: [...getWords(1), { type: 'gomoku', data: GOMOKU_LEVELS[1] }, { type: 'sync', data: {} }, { type: 'sync', data: {} }]
                 }
             ];
         };
 
-        // --- 组件部分 ---
+        // --- 通用组件 ---
 
         const DebugButton = ({ onClick }) => (
             <button 
@@ -231,7 +249,18 @@
                 className="absolute bottom-6 right-6 px-4 py-2 bg-red-900/40 text-red-200/50 text-xs rounded-full z-50 border border-red-500/20 active:bg-red-600 active:text-white font-sans-custom hover:scale-105 transition-all"
                 style={{ backdropFilter: 'blur(4px)' }}
             >
-                DEBUG: 跳过本局
+                DEBUG: 快速通关
+            </button>
+        );
+
+        const HintButton = ({ onHint, disabled }) => (
+            <button 
+                onClick={onHint}
+                disabled={disabled}
+                className={`flex flex-col items-center gap-1 transition-all ${disabled ? 'opacity-30 grayscale' : 'opacity-100 hover:scale-110 active:scale-95'}`}
+            >
+                <i className="ph-fill ph-lightbulb text-yellow-400 text-3xl drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]"></i>
+                <span className="text-[10px] text-yellow-200 font-sans-custom tracking-widest">HINT</span>
             </button>
         );
 
@@ -264,10 +293,24 @@
             );
         };
 
-        const GameWordPuzzle = ({ data, onComplete }) => {
+        // --- 游戏组件 ---
+
+        // 1. 单词拼写
+        const GameWordPuzzle = ({ data, onComplete, hintSignal }) => {
             const [selectedChars, setSelectedChars] = useState([]);
             const [feedback, setFeedback] = useState(""); 
             const isP1Controlling = data.startPlayer === 1;
+
+            // Hint Logic: Fill next correct char
+            useEffect(() => {
+                if(hintSignal > 0) {
+                    const nextCharIndex = selectedChars.length;
+                    if(nextCharIndex < data.word.length) {
+                        const correctChar = data.word[nextCharIndex];
+                        handleCharClick(correctChar);
+                    }
+                }
+            }, [hintSignal]);
 
             const handleCharClick = (char) => {
                 const newSelection = [...selectedChars, char];
@@ -336,12 +379,14 @@
             );
         };
 
-        const GameStarKnight = ({ levelId = 1, onComplete }) => {
+        // 2. 星际骑士
+        const GameStarKnight = ({ levelId = 1, onComplete, hintSignal }) => {
             const levelData = CHESS_LEVELS.find(l => l.id === levelId) || CHESS_LEVELS[0];
             const [knightPos, setKnightPos] = useState({r:0, c:0});
             const [targetsLeft, setTargetsLeft] = useState(0);
             const [gameStatus, setGameStatus] = useState("playing");
             const [activeGrid, setActiveGrid] = useState([]);
+            const [highlightMoves, setHighlightMoves] = useState(false);
 
             useEffect(() => {
                 let start = {r:0, c:0};
@@ -358,6 +403,14 @@
                 setGameStatus("playing");
             }, [levelData]);
 
+            // Hint: Highlight valid moves briefly
+            useEffect(() => {
+                if(hintSignal > 0) {
+                    setHighlightMoves(true);
+                    setTimeout(() => setHighlightMoves(false), 2000);
+                }
+            }, [hintSignal]);
+
             const isValidMove = (r1, c1, r2, c2) => {
                 const dr = Math.abs(r1 - r2);
                 const dc = Math.abs(c1 - c2);
@@ -369,12 +422,11 @@
                 if (!isValidMove(knightPos.r, knightPos.c, r, c)) return;
                 
                 const cellType = activeGrid[r][c];
-                if (cellType === 4) return; // Wall
+                if (cellType === 4) return; 
 
                 if (cellType === 2) {
                     setGameStatus("lost");
                      setTimeout(() => {
-                         // Reset
                          let start = {r:0, c:0};
                          levelData.grid.forEach((row, rr) => {
                              row.forEach((cell, cc) => { if(cell === 3) start = {rr, cc}; });
@@ -390,7 +442,7 @@
                 setKnightPos({r, c});
                 if (cellType === 1) {
                     const newGrid = [...activeGrid];
-                    newGrid[r][c] = 0; // Empty now
+                    newGrid[r][c] = 0; 
                     setActiveGrid(newGrid);
                     const newCount = targetsLeft - 1;
                     setTargetsLeft(newCount);
@@ -420,6 +472,7 @@
                                         ${isWall ? 'bg-slate-700 opacity-50' : 'bg-slate-700/30'}
                                         ${canMove ? 'ring-2 ring-white/20 cursor-pointer hover:bg-white/10' : ''}
                                         ${isKnight ? 'z-10' : ''}
+                                        ${(highlightMoves && canMove) ? 'bg-yellow-500/40 ring-2 ring-yellow-400' : ''}
                                     `}>
                                     {isKnight && <i className="ph-fill ph-horse text-cyan-400 text-2xl animate-bounce"></i>}
                                     {isTarget && !isKnight && <i className="ph-fill ph-star text-yellow-400 text-lg animate-pulse"></i>}
@@ -465,6 +518,192 @@
                     <div className="w-1/2 relative">
                         <RadarView />
                         <div className="absolute top-4 right-4 text-xs font-bold text-slate-500 font-sans-custom">NAVIGATOR</div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 3. 协作五子棋 (新)
+        const GameGomoku = ({ data, onComplete, hintSignal }) => {
+            const [cursorR, setCursorR] = useState(4);
+            const [cursorC, setCursorC] = useState(4);
+            const [gameStatus, setGameStatus] = useState("playing");
+            const [placed, setPlaced] = useState(false);
+
+            // Hint: Move cursor to winning spot
+            useEffect(() => {
+                if(hintSignal > 0 && !placed) {
+                    setCursorR(data.winSpot.r);
+                    setCursorC(data.winSpot.c);
+                }
+            }, [hintSignal]);
+
+            const handlePlace = () => {
+                if(placed || gameStatus !== "playing") return;
+                setPlaced(true);
+                
+                if (cursorR === data.winSpot.r && cursorC === data.winSpot.c || (data.winSpot2 && cursorR === data.winSpot2.r && cursorC === data.winSpot2.c)) {
+                    setGameStatus("won");
+                    setTimeout(onComplete, 1500);
+                } else {
+                    setGameStatus("lost");
+                    setTimeout(() => {
+                        setPlaced(false);
+                        setGameStatus("playing");
+                    }, 1000);
+                }
+            }
+
+            return (
+                <div className="flex w-full h-full relative z-10">
+                    <DebugButton onClick={() => onComplete()} />
+                    {/* 公共棋盘 - 居中显示 */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-[400px] h-[400px] bg-[#e2c792] shadow-2xl rounded-lg gomoku-grid relative border-2 border-[#8b5a2b]">
+                            {/* 棋子渲染 */}
+                            {data.pieces.map((p, i) => (
+                                <div key={i} className="absolute w-8 h-8 rounded-full shadow-md transform -translate-x-1/2 -translate-y-1/2"
+                                     style={{
+                                         left: `${p.c * 40 + 20}px`, 
+                                         top: `${p.r * 40 + 20}px`,
+                                         backgroundColor: p.t === 1 ? '#111' : '#f0f0f0',
+                                         border: p.t === 2 ? '1px solid #ccc' : 'none'
+                                     }}
+                                ></div>
+                            ))}
+                            {/* 玩家光标 */}
+                            <div className={`absolute w-10 h-10 border-4 transition-all duration-200 transform -translate-x-1/2 -translate-y-1/2
+                                ${gameStatus === 'won' ? 'border-green-500 scale-125' : (gameStatus === 'lost' ? 'border-red-500' : 'border-blue-500 animate-pulse')}
+                            `}
+                            style={{left: `${cursorC * 40 + 20}px`, top: `${cursorR * 40 + 20}px`}}
+                            >
+                                {/* 虚拟落子 */}
+                                {placed && (
+                                    <div className="w-full h-full rounded-full bg-black"></div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 左侧：行控制 */}
+                    <div className="w-1/2 border-r border-white/10 relative flex flex-col justify-center items-start pl-8">
+                        <div className="text-blue-300 font-bold mb-4 font-sans-custom">P1: 调整 行 (Row)</div>
+                        <div className="flex flex-col gap-4">
+                            <button onClick={() => setCursorR(Math.max(0, cursorR - 1))} className="p-4 bg-slate-700 rounded-full active:bg-slate-600"><i className="ph-bold ph-arrow-up text-2xl"></i></button>
+                            <button onClick={() => setCursorR(Math.min(9, cursorR + 1))} className="p-4 bg-slate-700 rounded-full active:bg-slate-600"><i className="ph-bold ph-arrow-down text-2xl"></i></button>
+                        </div>
+                    </div>
+
+                    {/* 右侧：列控制 */}
+                    <div className="w-1/2 relative flex flex-col justify-center items-end pr-8">
+                        <div className="text-blue-300 font-bold mb-4 font-sans-custom">P2: 调整 列 (Col)</div>
+                        <div className="flex flex-col gap-4 items-end">
+                            <div className="flex gap-4">
+                                <button onClick={() => setCursorC(Math.max(0, cursorC - 1))} className="p-4 bg-slate-700 rounded-full active:bg-slate-600"><i className="ph-bold ph-arrow-left text-2xl"></i></button>
+                                <button onClick={() => setCursorC(Math.min(9, cursorC + 1))} className="p-4 bg-slate-700 rounded-full active:bg-slate-600"><i className="ph-bold ph-arrow-right text-2xl"></i></button>
+                            </div>
+                            <button onClick={handlePlace} className="mt-8 px-8 py-4 bg-green-600 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all">
+                                确认落子 (PLACE)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 4. 协作数独 (新)
+        const GameSudoku = ({ data, onComplete, hintSignal }) => {
+            const [grid, setGrid] = useState([]);
+            const [selectedCell, setSelectedCell] = useState(null); // {r, c}
+            
+            useEffect(() => {
+                setGrid(JSON.parse(JSON.stringify(data.initial)));
+            }, [data]);
+
+            // Hint logic: Fill one empty correct cell
+            useEffect(() => {
+                if(hintSignal > 0) {
+                    for(let r=0; r<4; r++) {
+                        for(let c=0; c<4; c++) {
+                            if(grid[r][c] === 0) {
+                                const newGrid = [...grid];
+                                newGrid[r][c] = data.solution[r][c];
+                                setGrid(newGrid);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }, [hintSignal]);
+
+            // Check win
+            useEffect(() => {
+                if(grid.length > 0) {
+                    let full = true;
+                    let correct = true;
+                    for(let r=0; r<4; r++){
+                        for(let c=0; c<4; c++){
+                            if(grid[r][c] === 0) full = false;
+                            if(grid[r][c] !== 0 && grid[r][c] !== data.solution[r][c]) correct = false;
+                        }
+                    }
+                    if(full && correct) {
+                        setTimeout(onComplete, 1000);
+                    }
+                }
+            }, [grid]);
+
+            const handleNumberInput = (num) => {
+                if(!selectedCell) return;
+                const {r, c} = selectedCell;
+                if(data.initial[r][c] !== 0) return; // locked
+
+                const newGrid = [...grid];
+                newGrid[r][c] = num;
+                setGrid(newGrid);
+            };
+
+            return (
+                <div className="flex w-full h-full relative z-10">
+                    <DebugButton onClick={() => onComplete()} />
+                    {/* Left: Board Selector */}
+                    <div className="w-1/2 border-r border-white/10 flex flex-col items-center justify-center relative">
+                        <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 font-sans-custom">P1: 选择格子</div>
+                        <div className="grid grid-cols-4 gap-2 bg-slate-800 p-4 rounded-xl shadow-xl">
+                            {grid.map((row, r) => row.map((val, c) => {
+                                const isFixed = data.initial[r][c] !== 0;
+                                const isSelected = selectedCell?.r === r && selectedCell?.c === c;
+                                const isWrong = val !== 0 && val !== data.solution[r][c];
+                                return (
+                                    <div key={`${r}-${c}`}
+                                        onClick={() => !isFixed && setSelectedCell({r, c})}
+                                        className={`w-14 h-14 flex items-center justify-center text-2xl font-bold rounded cursor-pointer transition-all
+                                            ${isFixed ? 'bg-slate-700 text-slate-400' : 'bg-slate-600 text-white hover:bg-slate-500'}
+                                            ${isSelected ? 'ring-4 ring-yellow-400 z-10' : ''}
+                                            ${isWrong ? 'text-red-400' : ''}
+                                        `}
+                                    >
+                                        {val !== 0 ? val : ''}
+                                    </div>
+                                );
+                            }))}
+                        </div>
+                    </div>
+
+                    {/* Right: Number Pad */}
+                    <div className="w-1/2 flex flex-col items-center justify-center relative">
+                        <div className="absolute top-4 right-4 text-xs font-bold text-slate-500 font-sans-custom">P2: 填入数字</div>
+                        <div className="grid grid-cols-2 gap-4">
+                            {[1, 2, 3, 4].map(num => (
+                                <button key={num}
+                                    onClick={() => handleNumberInput(num)}
+                                    className="w-20 h-20 bg-blue-600 rounded-xl text-3xl font-bold shadow-lg active:bg-blue-500 active:scale-95 transition-all"
+                                >
+                                    {num}
+                                </button>
+                            ))}
+                            <button onClick={() => handleNumberInput(0)} className="col-span-2 h-12 bg-red-900/50 rounded-lg text-red-300 font-sans-custom">清除</button>
+                        </div>
                     </div>
                 </div>
             );
@@ -568,18 +807,19 @@
 
         const App = () => {
             const [gameStage, setGameStage] = useState("menu"); 
-            // 状态管理改为：当前章节Index + 当前章节内的游戏Index
             const [chapterIndex, setChapterIndex] = useState(0);
             const [gameIndexInChapter, setGameIndexInChapter] = useState(0);
-            const [moonProgress, setMoonProgress] = useState(0); 
+            const [moonProgress, setMoonProgress] = useState(0);
             
-            // 使用 useMemo 保持游戏结构稳定，除非回到主菜单
+            // Hint System State
+            const [hintSignal, setHintSignal] = useState(0);
+            const [hintsRemaining, setHintsRemaining] = useState(3);
+            
             const chapters = useMemo(() => {
                 if (gameStage === "menu") return generateGameStructure();
                 return null;
             }, [gameStage === "menu"]);
 
-            // 引用一个持久化的章节数据，避免重渲染丢失
             const [activeChapters, setActiveChapters] = useState([]);
             useEffect(() => {
                 if(chapters) setActiveChapters(chapters);
@@ -589,21 +829,26 @@
                 setChapterIndex(0);
                 setGameIndexInChapter(0);
                 setMoonProgress(0);
+                setHintsRemaining(3); // Reset hints per game or per chapter? Let's do per game session for challenge
                 setGameStage("playing");
+            };
+
+            const triggerHint = () => {
+                if(hintsRemaining > 0) {
+                    setHintSignal(s => s + 1);
+                    setHintsRemaining(h => h - 1);
+                }
             };
 
             const handleGameComplete = () => {
                 const currentChapter = activeChapters[chapterIndex];
-                
-                // 检查章节内是否还有下一关
+                // Reset hints slightly per level? Or give +1 hint per level clear
+                setHintsRemaining(h => Math.min(5, h + 1));
+
                 if (gameIndexInChapter + 1 < currentChapter.games.length) {
-                    // 还有小游戏，继续
                     setGameIndexInChapter(prev => prev + 1);
                 } else {
-                    // 章节完成！
                     setGameStage("chapter_complete");
-                    
-                    // 更新月亮进度 (基于章节数)
                     const nextChapterIdx = chapterIndex + 1;
                     const totalChapters = activeChapters.length;
                     const newProgress = nextChapterIdx / totalChapters;
@@ -637,7 +882,6 @@
                 );
             }
 
-            // 获取当前游戏数据
             const currentChapter = activeChapters[chapterIndex];
             const currentGame = currentChapter ? currentChapter.games[gameIndexInChapter] : null;
 
@@ -648,14 +892,21 @@
                     {/* 顶部状态栏 */}
                     <div className="h-14 border-b border-white/5 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur z-20 shrink-0">
                         <div className="text-slate-400 text-sm font-bold tracking-widest font-sans-custom">MOONLIGHT MOSAIC</div>
+                        
+                        <div className="absolute left-1/2 transform -translate-x-1/2">
+                            {gameStage === 'playing' && (
+                                <HintButton onHint={triggerHint} disabled={hintsRemaining <= 0} />
+                            )}
+                        </div>
+
                         <div className="flex gap-4 items-center">
                             {currentChapter && (
                                 <div className="text-slate-300 text-xs font-sans-custom px-2 py-1 bg-white/5 rounded">
-                                    {currentChapter.title} - Game {gameIndexInChapter + 1}/{currentChapter.games.length}
+                                    {currentChapter.title} - {gameIndexInChapter + 1}/{currentChapter.games.length}
                                 </div>
                             )}
                             <div className="text-yellow-500 font-proposal-en italic text-lg">
-                                {gameStage === 'playing' ? `Chapter ${chapterIndex + 1} / ${activeChapters.length}` : ''}
+                                {gameStage === 'playing' ? `Chapter ${chapterIndex + 1}` : ''}
                             </div>
                         </div>
                     </div>
@@ -671,8 +922,7 @@
                                     START GAME
                                 </button>
                                 <div className="mt-8 text-xs text-slate-500 font-sans-custom flex flex-col items-center gap-1">
-                                    <span>推荐操作：Safari Share &rarr; Add to Home Screen</span>
-                                    <span>获得全屏体验</span>
+                                    <span>提示: 如无法隐藏地址栏，请将此页面部署至 Github Pages 等服务器后再添加到主屏幕</span>
                                 </div>
                             </div>
                         )}
@@ -693,9 +943,11 @@
 
                         {gameStage === "playing" && currentGame && (
                             <div className="w-full h-full">
-                                {currentGame.type === 'word' && <GameWordPuzzle key={`w-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} />}
-                                {currentGame.type === 'knight' && <GameStarKnight key={`k-${chapterIndex}-${gameIndexInChapter}`} levelId={currentGame.data.id} onComplete={handleGameComplete} />}
+                                {currentGame.type === 'word' && <GameWordPuzzle key={`w-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
+                                {currentGame.type === 'knight' && <GameStarKnight key={`k-${chapterIndex}-${gameIndexInChapter}`} levelId={currentGame.data.id} onComplete={handleGameComplete} hintSignal={hintSignal} />}
                                 {currentGame.type === 'sync' && <GameSyncReaction key={`s-${chapterIndex}-${gameIndexInChapter}`} onComplete={handleGameComplete} />}
+                                {currentGame.type === 'gomoku' && <GameGomoku key={`g-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
+                                {currentGame.type === 'sudoku' && <GameSudoku key={`sd-${chapterIndex}-${gameIndexInChapter}`} data={currentGame.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
                             </div>
                         )}
 
