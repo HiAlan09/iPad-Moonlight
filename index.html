@@ -51,11 +51,11 @@
         }
         .animate-ring-fly { animation: ring-fly 1.5s ease-in-out forwards; }
 
-        /* 雷达专属样式 */
+        /* 棋盘格线样式 */
         .radar-board {
             display: grid;
             gap: 1px;
-            background-color: #7f1d1d; 
+            background-color: #7f1d1d; /* 红色网格线 */
             border: 2px solid #ef4444;
             box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
             padding: 2px;
@@ -63,6 +63,19 @@
         }
         .radar-cell {
             background-color: #1a0505;
+        }
+
+        .pilot-board {
+            display: grid;
+            gap: 1px;
+            background-color: #475569; /* 蓝灰色网格线 */
+            border: 2px solid #94a3b8;
+            box-shadow: 0 0 15px rgba(148, 163, 184, 0.3);
+            padding: 2px;
+            border-radius: 0.5rem;
+        }
+        .pilot-cell {
+            background-color: #0f172a;
         }
         
         .skull-jump { animation: skullJump 0.8s infinite alternate; }
@@ -168,7 +181,7 @@
             };
 
             const levels = [];
-            // 20关配置: 6 x Chess, 4 x Sudoku, 10 x Word (Mixed, NO Connect)
+            // 20关配置: 6 x Chess, 4 x Sudoku, 10 x Word
             const gameTypes = [
                 ...Array(6).fill('knight'),
                 ...Array(4).fill('sudoku'),
@@ -274,12 +287,11 @@
             </div>
         );
 
-        // --- 月亮/戒指展示 (Visual Fix: Pure Moon, No Square) ---
         const MoonDisplay = ({ progress, isFull, isRing, stage }) => {
             return (
                 <div className={`relative w-full h-full flex items-center justify-center transition-all duration-1000`}>
                     
-                    {/* Ring Base (Band) */}
+                    {/* Ring Base */}
                     <div className={`absolute w-full h-full flex items-center justify-center transition-opacity duration-1000 ${stage >= 3 ? 'opacity-100' : 'opacity-0'}`}>
                          <svg viewBox="0 0 100 100" className="w-80 h-80 drop-shadow-[0_0_30px_rgba(255,255,255,0.5)] overflow-visible">
                             <defs>
@@ -289,17 +301,15 @@
                                     <stop offset="100%" stopColor="#cbd5e1" />
                                 </linearGradient>
                             </defs>
-                            {/* Band: Perfect Circle */}
                             <circle cx="50" cy="65" r="28" fill="none" stroke="url(#silverGradient)" strokeWidth="6" />
-                            {/* Setting */}
                             <path d="M40 37 L40 28 L60 28 L60 37" fill="none" stroke="url(#silverGradient)" strokeWidth="3" />
                             <path d="M42 28 L50 32 L58 28" fill="none" stroke="url(#silverGradient)" strokeWidth="2" />
                         </svg>
                     </div>
 
-                    {/* Moon/Diamond - Pure (Removed extra filters) */}
+                    {/* Moon/Diamond */}
                     <div className={`relative w-[500px] h-[500px] p-4 transition-all duration-[2000ms] ease-in-out
-                        ${stage >= 2 ? 'scale-[0.15] -translate-y-20 z-10' : (isFull ? 'scale-110' : 'scale-90')}
+                        ${stage >= 2 ? 'scale-[0.22] -translate-y-24 z-10' : (isFull ? 'scale-110' : 'scale-90')}
                     `}>
                         <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl moon-glow overflow-visible">
                             <defs>
@@ -313,7 +323,6 @@
                                     <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
                                 </filter>
                             </defs>
-                            {/* Pure Circle, No Texture Filter to avoid square box */}
                             <circle cx="50" cy="50" r="46" fill="url(#moonGradient)" filter="url(#glow)" />
                         </svg>
                         {stage >= 2 && (
