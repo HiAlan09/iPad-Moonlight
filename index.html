@@ -51,31 +51,44 @@
         }
         .animate-ring-fly { animation: ring-fly 1.5s ease-in-out forwards; }
 
-        /* 棋盘格线样式 */
+        /* 雷达专属样式 - 修改为自适应宽度，不再强制固定宽高 */
         .radar-board {
             display: grid;
             gap: 1px;
-            background-color: #7f1d1d; /* 红色网格线 */
+            background-color: #7f1d1d; 
             border: 2px solid #ef4444;
             box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
             padding: 2px;
             border-radius: 0.5rem;
+            /* 移除固定宽高，由内容撑开 */
+            width: max-content;
+            height: max-content;
         }
         .radar-cell {
-            background-color: #1a0505;
+            background-color: #1a0505; 
+            /* 强制固定格子大小 */
+            width: 3.5rem; /* 56px */
+            height: 3.5rem; 
         }
-
+        
+        /* 飞行员专属样式 */
         .pilot-board {
             display: grid;
             gap: 1px;
-            background-color: #475569; /* 蓝灰色网格线 */
+            background-color: #475569; 
             border: 2px solid #94a3b8;
             box-shadow: 0 0 15px rgba(148, 163, 184, 0.3);
             padding: 2px;
             border-radius: 0.5rem;
+            /* 移除固定宽高 */
+            width: max-content;
+            height: max-content;
         }
-        .pilot-cell {
-            background-color: #0f172a;
+        .pilot-cell { 
+            background-color: #0f172a; 
+            /* 强制固定格子大小 */
+            width: 3.5rem; 
+            height: 3.5rem; 
         }
         
         .skull-jump { animation: skullJump 0.8s infinite alternate; }
@@ -181,7 +194,7 @@
             };
 
             const levels = [];
-            // 20关配置: 6 x Chess, 4 x Sudoku, 10 x Word
+            // 20关配置
             const gameTypes = [
                 ...Array(6).fill('knight'),
                 ...Array(4).fill('sudoku'),
@@ -240,7 +253,7 @@
         };
 
         const GameInstruction = ({ text }) => (
-            <div className="absolute top-2 w-full text-center pointer-events-none z-30">
+            <div className="absolute top-20 w-full text-center pointer-events-none z-30">
                 <span className="bg-black/60 text-yellow-300 text-lg px-6 py-2 rounded-full border border-yellow-500/30 backdrop-blur-md shadow-lg font-sans-custom tracking-wider">
                     <i className="ph-fill ph-info mr-2"></i>{text}
                 </span>
@@ -287,11 +300,11 @@
             </div>
         );
 
-        const MoonDisplay = ({ progress, isFull, isRing, stage }) => {
+        const MoonDisplay = ({ progress, isFull, isRing, stage, isModal }) => {
             return (
                 <div className={`relative w-full h-full flex items-center justify-center transition-all duration-1000`}>
                     
-                    {/* Ring Base */}
+                    {/* Ring Base (Band) */}
                     <div className={`absolute w-full h-full flex items-center justify-center transition-opacity duration-1000 ${stage >= 3 ? 'opacity-100' : 'opacity-0'}`}>
                          <svg viewBox="0 0 100 100" className="w-80 h-80 drop-shadow-[0_0_30px_rgba(255,255,255,0.5)] overflow-visible">
                             <defs>
@@ -301,15 +314,17 @@
                                     <stop offset="100%" stopColor="#cbd5e1" />
                                 </linearGradient>
                             </defs>
+                            {/* Band: Perfect Circle */}
                             <circle cx="50" cy="65" r="28" fill="none" stroke="url(#silverGradient)" strokeWidth="6" />
+                            {/* Setting */}
                             <path d="M40 37 L40 28 L60 28 L60 37" fill="none" stroke="url(#silverGradient)" strokeWidth="3" />
                             <path d="M42 28 L50 32 L58 28" fill="none" stroke="url(#silverGradient)" strokeWidth="2" />
                         </svg>
                     </div>
 
-                    {/* Moon/Diamond */}
+                    {/* Moon/Diamond - Proportions Locked */}
                     <div className={`relative w-[500px] h-[500px] p-4 transition-all duration-[2000ms] ease-in-out
-                        ${stage >= 2 ? 'scale-[0.22] -translate-y-24 z-10' : (isFull ? 'scale-110' : 'scale-90')}
+                        ${(stage >= 2) ? 'scale-[0.20] -translate-y-20 z-10' : (isFull ? 'scale-110' : 'scale-90')}
                     `}>
                         <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl moon-glow overflow-visible">
                             <defs>
@@ -323,6 +338,7 @@
                                     <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
                                 </filter>
                             </defs>
+                            {/* Pure Circle */}
                             <circle cx="50" cy="50" r="46" fill="url(#moonGradient)" filter="url(#glow)" />
                         </svg>
                         {stage >= 2 && (
@@ -558,11 +574,12 @@
                 setHistory(prev => prev.slice(0, -1));
             };
 
+            // FIX: Fixed Square Cells regardless of content
             const RadarBoard = () => (
                 <div className="radar-board" style={{gridTemplateColumns: `repeat(${levelData.size}, 1fr)`}}>
                     {activeGrid.map((row, r) => row.map((cell, c) => {
                         const isK = r===knightPos.r && c===knightPos.c;
-                        return <div key={`${r}-${c}`} className={`w-14 h-14 rounded flex items-center justify-center relative radar-cell`}>
+                        return <div key={`${r}-${c}`} className={`w-14 h-14 aspect-square rounded flex items-center justify-center relative radar-cell`}>
                             {isK && <div className="w-4 h-4 bg-yellow-300 rounded-full my-piece-dot shadow-[0_0_10px_yellow]"></div>}
                             {cell===2 && <i className="ph-fill ph-skull text-red-500 text-3xl skull-jump drop-shadow-md"></i>}
                         </div>
@@ -576,7 +593,7 @@
                         const isK = r===knightPos.r && c===knightPos.c;
                         const isT = trapMsg && trapMsg.r===r && trapMsg.c===c;
                         const isStar = cell === 1;
-                        return <div key={`${r}-${c}`} onClick={()=>handleMove(r,c)} className={`w-14 h-14 rounded flex items-center justify-center relative cursor-pointer active:scale-90 transition-transform pilot-cell ${cell===4?'bg-slate-600 border border-slate-500':''} ${highlightTargets && isStar ? 'ring-4 ring-yellow-400 bg-yellow-900/30' : ''}`}>
+                        return <div key={`${r}-${c}`} onClick={()=>handleMove(r,c)} className={`w-14 h-14 aspect-square rounded flex items-center justify-center relative cursor-pointer active:scale-90 transition-transform pilot-cell ${cell===4?'bg-slate-600 border border-slate-500':''} ${highlightTargets && isStar ? 'ring-4 ring-yellow-400 bg-yellow-900/30' : ''}`}>
                             {isK && <i className="ph-fill ph-horse text-cyan-400 text-3xl drop-shadow-lg"></i>}
                             {isStar && !isK && <i className={`ph-fill ph-star text-yellow-400 text-xl ${highlightTargets ? 'animate-bounce' : ''}`}></i>}
                             {isT && <i className="ph-fill ph-skull text-white text-3xl animate-bounce"></i>}
@@ -595,7 +612,7 @@
             </div>;
         };
 
-        const GameSudoku = ({ data, onComplete }) => {
+        const GameSudoku = ({ data, onComplete, hintSignal }) => {
             if(!data) return null;
             const [grid, setGrid] = useState([]);
             const [selectedCell, setSelectedCell] = useState(null); 
@@ -607,6 +624,31 @@
                 setGrid(data.solution);
                 setDebugSolved(true);
             };
+
+            // FIXED HINT LOGIC (Random empty or wrong cell)
+            useEffect(() => {
+                if(hintSignal > 0) {
+                    let candidates = [];
+                    for(let r=0; r<4; r++) {
+                        for(let c=0; c<4; c++) {
+                             // Correct: grid is empty OR grid is wrong (and not initial)
+                             const current = grid[r][c];
+                             const correct = data.solution[r][c];
+                             const isInitial = data.initial[r][c] !== 0;
+                             if (!isInitial && (current === 0 || current !== correct)) {
+                                 candidates.push({r, c});
+                             }
+                        }
+                    }
+                    
+                    if(candidates.length > 0) {
+                        const target = candidates[Math.floor(Math.random() * candidates.length)];
+                        const newGrid = [...grid.map(row=>[...row])];
+                        newGrid[target.r][target.c] = data.solution[target.r][target.c];
+                        setGrid(newGrid);
+                    }
+                }
+            }, [hintSignal]);
 
             useEffect(() => {
                 if(grid.length > 0) {
@@ -673,7 +715,7 @@
                     
                     <div className={`absolute w-full h-full flex items-center justify-center transition-transform duration-[1500ms] ease-in-out ${stage >= 1 ? '-translate-x-[25vw]' : ''}`}>
                         <div className={`relative ${ringFly ? 'animate-ring-fly' : ''}`}>
-                            <MoonDisplay progress={1} isFull={true} isRing={false} stage={stage} />
+                            <MoonDisplay progress={1} isFull={true} isRing={false} stage={stage} isModal={ringFly} />
                         </div>
                     </div>
 
@@ -691,7 +733,10 @@
                     {showModal && (
                         <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 animate-fade-in">
                             <div className="bg-slate-900/90 p-12 rounded-3xl border border-yellow-500/50 flex flex-col items-center shadow-[0_0_50px_rgba(234,179,8,0.3)]">
-                                <div className="w-48 h-48 mb-8 animate-bounce"><MoonDisplay progress={1} isFull={true} isRing={false} stage={3} /></div>
+                                {/* Fixed: Consistent Size in Modal */}
+                                <div className="w-[400px] h-[400px] mb-8 animate-bounce flex items-center justify-center">
+                                    <MoonDisplay progress={1} isFull={true} isRing={false} stage={3} isModal={true} />
+                                </div>
                                 <h2 className="text-4xl text-yellow-400 font-proposal-cn mb-8">我也爱你!</h2>
                                 <button onClick={onReplay} className="text-slate-400 hover:text-white border-b border-transparent hover:border-white transition-all">返回主页</button>
                             </div>
@@ -776,21 +821,18 @@
             return (
                 <div className="w-screen h-screen flex flex-col overflow-hidden relative">
                     <StarBackground />
-                    {/* Centered Main Menu Layout Fix */}
+                    {/* Fixed Main Menu Layout - Center Aligned */}
                     {gameStage === "menu" ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center z-50 gap-6">
-                             {/* Moon Container */}
-                            <div className="relative w-80 h-80 flex items-center justify-center">
+                        <div className="absolute inset-0 flex flex-col justify-center items-center h-full gap-6 z-50">
+                             <div className="relative w-80 h-80 flex items-center justify-center shrink-0">
                                  <MoonDisplay progress={0} isFull={false} isRing={false} stage={0} />
                             </div>
                             
-                            {/* Text & Button Container */}
-                            <div className="flex flex-col items-center gap-6">
+                            <div className="flex flex-col items-center gap-4 -mt-8">
                                 <div className="text-center">
                                     <h1 className="text-7xl text-yellow-400 tracking-tighter font-serif font-bold drop-shadow-[0_0_20px_rgba(250,204,21,0.4)] mb-2">Moonlight Mosaic</h1>
                                     <p className="text-slate-300 text-2xl font-proposal-cn tracking-[0.2em] opacity-80">双人 · 协作 · 永恒</p>
                                 </div>
-                                
                                 <button onClick={startNewGame} className="px-12 py-5 border-2 border-yellow-500/50 bg-yellow-500/10 text-yellow-300 rounded-full hover:bg-yellow-500/20 hover:border-yellow-400 hover:text-white hover:scale-105 transition-all duration-300 text-2xl tracking-widest font-sans-custom backdrop-blur-sm shadow-[0_0_30px_rgba(234,179,8,0.2)]">
                                     START GAME
                                 </button>
@@ -830,7 +872,7 @@
                                         {currentLevel.type === 'word' && <GameWordPuzzle key={`lvl-${currentLevelIndex}`} data={currentLevel.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
                                         {currentLevel.type === 'scramble' && <GameScramble key={`lvl-${currentLevelIndex}`} data={currentLevel.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
                                         {currentLevel.type === 'knight' && <GameStarKnight key={`lvl-${currentLevelIndex}`} levelId={currentLevel.data.id} onComplete={handleGameComplete} hintSignal={hintSignal} />}
-                                        {currentLevel.type === 'sudoku' && <GameSudoku key={`lvl-${currentLevelIndex}`} data={currentLevel.data} onComplete={handleGameComplete} />}
+                                        {currentLevel.type === 'sudoku' && <GameSudoku key={`lvl-${currentLevelIndex}`} data={currentLevel.data} onComplete={handleGameComplete} hintSignal={hintSignal} />}
                                     </div>
                                 )}
 
